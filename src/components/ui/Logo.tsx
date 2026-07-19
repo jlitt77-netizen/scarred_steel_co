@@ -12,7 +12,15 @@
  */
 export const LOGO_ASSETS_AVAILABLE = true;
 
-const LOGO_SRC = "/brand/logo-full.png";
+// Two owner-supplied assets, both transparent-background PNGs:
+//  - full: the distressed-steel badge lockup (the showpiece — used in heroes).
+//  - mono: a clean white wordmark (crisp in small header/sidebar chrome).
+// `compact` reuses the full mark as a square badge in the collapsed sidebar.
+const SRC: Record<"full" | "compact" | "mono", string> = {
+  full: "/brand/logo-full.png",
+  compact: "/brand/logo-full.png",
+  mono: "/brand/logo-mono.png",
+};
 
 export function Logo({
   variant = "full",
@@ -27,7 +35,7 @@ export function Logo({
   // eslint-disable-next-line @next/next/no-img-element
   return (
     <img
-      src={LOGO_SRC}
+      src={SRC[variant]}
       alt="Scarred Steel Co."
       className={`w-auto object-contain ${defaultHeight} ${className}`.trim()}
     />

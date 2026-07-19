@@ -41,7 +41,7 @@ export function Sidebar({
     >
       <div className="flex h-14 items-center border-b border-bg-gunmetal px-3">
         <Link href={product.home} onClick={onNavigate} className="flex items-center gap-2 overflow-hidden">
-          <Logo variant={collapsed ? "compact" : "full"} className={collapsed ? "" : "h-11"} />
+          <Logo variant={collapsed ? "compact" : "mono"} className={collapsed ? "" : "h-8"} />
         </Link>
       </div>
       {!collapsed && (

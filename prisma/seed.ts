@@ -470,6 +470,49 @@ async function seedSponsors(ceoId: string) {
   });
 }
 
+async function seedCommerce(ceoId: string) {
+  if ((await prisma.merchProduct.count()) > 0) return;
+
+  const vehicle = await prisma.vehicle.findFirst({ where: { model: "F-150" } });
+  const vehicleId = vehicle?.id ?? null;
+
+  await prisma.merchProduct.createMany({
+    data: [
+      { name: "Patina King Tee", sku: "SS-TEE-001", category: "Apparel", status: "Active", cogsCents: toCents(9), retailCents: toCents(28), inventoryQty: 60, reorderPoint: 20, vehicleId, createdById: ceoId, updatedById: ceoId },
+      { name: "Scarred Steel Snapback", sku: "SS-HAT-001", category: "Headwear", status: "Active", cogsCents: toCents(11), retailCents: toCents(32), inventoryQty: 8, reorderPoint: 15, createdById: ceoId, updatedById: ceoId },
+      { name: "F-150 Build Poster", sku: "SS-PRT-150", category: "Poster / Print", status: "Active", cogsCents: toCents(6), retailCents: toCents(24), inventoryQty: 40, reorderPoint: 10, isDrop: true, dropDate: new Date("2026-08-15"), dropQuantity: 100, vehicleId, createdById: ceoId, updatedById: ceoId },
+      { name: "Built. Scarred. Sticker Pack", sku: "SS-STK-001", category: "Sticker / Decal", status: "Active", cogsCents: toCents(1), retailCents: toCents(8), inventoryQty: 200, reorderPoint: 50, createdById: ceoId, updatedById: ceoId },
+    ],
+  });
+
+  await prisma.affiliateProduct.createMany({
+    data: [
+      { name: "Ridetech Coilover Kit", vendor: "Ridetech", url: "https://example.com/ridetech", clicks: 640, conversions: 14, revenueCents: toCents(420), commissionPct: 6, vehicleId, createdById: ceoId, updatedById: ceoId },
+      { name: "Summit Racing Brake Kit", vendor: "Summit Racing", url: "https://example.com/summit-brakes", clicks: 380, conversions: 9, revenueCents: toCents(180), commissionPct: 5, vehicleId, createdById: ceoId, updatedById: ceoId },
+      { name: "Detailing Kit", vendor: "Chemical Guys", url: "https://example.com/detail", clicks: 210, conversions: 6, revenueCents: toCents(72), commissionPct: 8, createdById: ceoId, updatedById: ceoId },
+    ],
+  });
+
+  const guide = await prisma.digitalProduct.create({
+    data: { name: "F-150 Complete Build Guide", type: "Complete Build Guide", status: "Published", vehicleId, priceCents: toCents(49), salesCount: 32, revenueCents: toCents(1568), description: "Every phase, spec, and part for the Patina King F-150.", createdById: ceoId, updatedById: ceoId },
+  });
+  await prisma.digitalProduct.create({
+    data: { name: "F-150 Free Build Sheet", type: "Build Sheet", status: "Published", vehicleId, priceCents: 0, salesCount: 210, revenueCents: 0, description: "Lead magnet — the at-a-glance build sheet.", createdById: ceoId, updatedById: ceoId },
+  });
+  await prisma.digitalProduct.create({
+    data: { name: "F-150 Suspension Build Kit", type: "Build Kit", status: "Draft", vehicleId, priceCents: toCents(1200), salesCount: 0, revenueCents: 0, createdById: ceoId, updatedById: ceoId },
+  });
+
+  await prisma.blueprintSection.createMany({
+    data: [
+      { digitalProductId: guide.id, vehicleId, title: "Acquisition & inspection notes", phaseName: "Acquisition", sequence: 1, capturedDate: new Date("2026-02-20"), createdById: ceoId },
+      { digitalProductId: guide.id, vehicleId, title: "Teardown documentation", phaseName: "Teardown", sequence: 2, capturedDate: new Date("2026-03-05"), createdById: ceoId },
+      { digitalProductId: guide.id, vehicleId, title: "Front suspension: coilover + drop spindle spec", phaseName: "Suspension", sequence: 3, capturedDate: new Date("2026-05-12"), createdById: ceoId },
+      { digitalProductId: guide.id, vehicleId, title: "Lowering geometry & ride height", phaseName: "Lowering / Lifting", sequence: 4, capturedDate: new Date("2026-05-20"), createdById: ceoId },
+    ],
+  });
+}
+
 async function main() {
   console.log("Seeding Scarred Steel Co. Platform (Phase 1)…");
   await seedRbac();
@@ -490,6 +533,8 @@ async function main() {
   console.log("  ✓ media (series, episodes, content revenue, social posts)");
   await seedSponsors(ceo.id);
   console.log("  ✓ sponsors (CRM pipeline + deliverables)");
+  await seedCommerce(ceo.id);
+  console.log("  ✓ commerce (merch, affiliate, digital products, blueprint)");
   console.log("Seed complete. Dev password for all accounts: " + DEV_PASSWORD);
 }
 

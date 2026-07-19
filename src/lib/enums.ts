@@ -469,6 +469,33 @@ export const DELIVERABLE_STATUSES = [
 ] as const;
 export type DeliverableStatus = (typeof DELIVERABLE_STATUSES)[number];
 
+// ---- Phase 8: Merchandise & Commerce + Digital Products (Sections 18–19) ----
+
+export const MERCH_CATEGORIES = [
+  "Apparel",
+  "Headwear",
+  "Sticker / Decal",
+  "Poster / Print",
+  "Drinkware",
+  "Accessory",
+  "Other",
+] as const;
+export type MerchCategory = (typeof MERCH_CATEGORIES)[number];
+
+export const MERCH_STATUSES = ["Draft", "Active", "Sold Out", "Archived"] as const;
+export type MerchStatus = (typeof MERCH_STATUSES)[number];
+
+export const DIGITAL_PRODUCT_TYPES = [
+  "Build Sheet", // free
+  "Build Blueprint",
+  "Complete Build Guide", // premium
+  "Build Kit",
+] as const;
+export type DigitalProductType = (typeof DIGITAL_PRODUCT_TYPES)[number];
+
+export const DIGITAL_PRODUCT_STATUSES = ["Draft", "Published", "Archived"] as const;
+export type DigitalProductStatus = (typeof DIGITAL_PRODUCT_STATUSES)[number];
+
 export const NOTIFICATION_TYPES = [
   "task_due",
   "dependency_risk",

@@ -355,6 +355,69 @@ export const COMP_SCENARIOS = [
 ] as const;
 export type CompScenario = (typeof COMP_SCENARIOS)[number];
 
+// ---- Phase 6: Media & Content + Social (Sections 14–16) --------------------
+
+export const CONTENT_SERIES_STATUSES = [
+  "Planning",
+  "Active",
+  "On Hold",
+  "Completed",
+  "Archived",
+] as const;
+export type ContentSeriesStatus = (typeof CONTENT_SERIES_STATUSES)[number];
+
+// Ordered content pipeline: concept → script → film → edit → publish.
+export const EPISODE_STAGES = [
+  "Concept",
+  "Script",
+  "Filming",
+  "Editing",
+  "Review",
+  "Scheduled",
+  "Published",
+] as const;
+export type EpisodeStage = (typeof EPISODE_STAGES)[number];
+
+export const SOCIAL_PLATFORMS = [
+  "YouTube",
+  "YouTube Shorts",
+  "Instagram",
+  "Instagram Reels",
+  "TikTok",
+  "Facebook",
+  "Email",
+  "SMS",
+] as const;
+export type SocialPlatform = (typeof SOCIAL_PLATFORMS)[number];
+
+export const SOCIAL_POST_KINDS = [
+  "Teaser",
+  "Short",
+  "Reel",
+  "Post",
+  "Story",
+  "Email",
+  "SMS",
+  "Sponsor",
+  "Affiliate",
+  "Merch",
+] as const;
+export type SocialPostKind = (typeof SOCIAL_POST_KINDS)[number];
+
+// Ordered publishing pipeline (Section 16).
+export const SOCIAL_POST_STATUSES = [
+  "Idea",
+  "Draft",
+  "Creative Ready",
+  "Sponsor Review",
+  "Scheduled",
+  "Published",
+] as const;
+export type SocialPostStatus = (typeof SOCIAL_POST_STATUSES)[number];
+
+export const CONTENT_REVENUE_SOURCES = ["Ad", "Sponsor", "Affiliate", "Merch"] as const;
+export type ContentRevenueSource = (typeof CONTENT_REVENUE_SOURCES)[number];
+
 export const NOTIFICATION_TYPES = [
   "task_due",
   "dependency_risk",

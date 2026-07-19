@@ -26,6 +26,7 @@ export interface CalendarItem {
   vehicleLabel: string | null;
   projectId: string | null;
   taskId: string | null;
+  source?: "event" | "episode" | "post"; // where the item originates
 }
 
 export interface CalendarFilters {
@@ -87,6 +88,49 @@ export async function getCalendarItems(
       });
     }
   }
+  // Media content flows through the Master Calendar (Sections 4 & 16): episodes
+  // appear on their publish date and social posts on their scheduled/publish
+  // date, all as "content" occurrences. Skipped when content is filtered out,
+  // or (for posts, which have no project anchor) when a project filter is set.
+  const contentWanted = !wanted || wanted.has("content");
+  if (contentWanted) {
+    const inWindow = (d: Date | null | undefined): d is Date => !!d && d >= from && d <= to;
+    const vLabels = new Map<string, string>();
+    for (const e of events) if (e.vehicle) vLabels.set(e.vehicle.id, `${e.vehicle.year} ${e.vehicle.model}`);
+
+    const episodes = await prisma.episode.findMany({
+      where: filters.vehicleId ? { vehicleId: filters.vehicleId } : filters.projectId ? { projectId: filters.projectId } : {},
+      select: { id: true, title: true, vehicleId: true, projectId: true, plannedPublishDate: true, publishedDate: true },
+    });
+    for (const ep of episodes) {
+      const date = ep.publishedDate ?? ep.plannedPublishDate;
+      if (!inWindow(date)) continue;
+      items.push({
+        key: `ep:${ep.id}`, eventId: ep.id, title: `📺 ${ep.title}`, type: "content",
+        category: "content", date: date.toISOString().slice(0, 10), amountCents: null,
+        vehicleId: ep.vehicleId, vehicleLabel: ep.vehicleId ? vLabels.get(ep.vehicleId) ?? null : null,
+        projectId: ep.projectId, taskId: null, source: "episode",
+      });
+    }
+
+    if (!filters.projectId) {
+      const posts = await prisma.socialPost.findMany({
+        where: filters.vehicleId ? { vehicleId: filters.vehicleId } : {},
+        select: { id: true, title: true, platform: true, vehicleId: true, scheduledDate: true, publishedDate: true },
+      });
+      for (const p of posts) {
+        const date = p.publishedDate ?? p.scheduledDate;
+        if (!inWindow(date)) continue;
+        items.push({
+          key: `post:${p.id}`, eventId: p.id, title: `${p.platform}: ${p.title}`, type: "social",
+          category: "content", date: date.toISOString().slice(0, 10), amountCents: null,
+          vehicleId: p.vehicleId, vehicleLabel: p.vehicleId ? vLabels.get(p.vehicleId) ?? null : null,
+          projectId: null, taskId: null, source: "post",
+        });
+      }
+    }
+  }
+
   items.sort((a, b) => a.date.localeCompare(b.date));
   return items;
 }

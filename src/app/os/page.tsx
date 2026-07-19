@@ -29,7 +29,7 @@ export default async function OsHome() {
   const canSchedule = can(ctx, "event:read") || can(ctx, "calendar:read");
   const now = new Date();
 
-  const [vehicles, projects, tasks, openRisks, upcomingRevenue, cash, sponsorDue] =
+  const [vehicles, projects, tasks, openRisks, upcomingRevenue, cash, sponsorDue, customerApprovals] =
     await Promise.all([
       prisma.vehicle.findMany({ orderBy: { updatedAt: "desc" } }),
       prisma.project.findMany({ include: { vehicle: true } }),
@@ -50,6 +50,7 @@ export default async function OsHome() {
         : Promise.resolve([]),
       canFinance ? getCashSummary(ctx) : Promise.resolve(null),
       canSponsor ? getDeliverablesDueCount(ctx) : Promise.resolve(null),
+      prisma.changeOrder.count({ where: { status: "proposed" } }),
     ]);
 
   const activeBuilds = projects.filter((p) => p.status === "Active").length;
@@ -96,7 +97,7 @@ export default async function OsHome() {
         ) : (
           <MetricCard label="Sponsor Deliverables Due" value={<Pending phase={7} />} />
         )}
-        <MetricCard label="Customer Approvals" value={<Pending phase={11} />} />
+        <MetricCard label="Customer Approvals" value={customerApprovals} tone={customerApprovals > 0 ? "attention" : "healthy"} hint={customerApprovals > 0 ? "pending change orders" : undefined} />
       </div>
 
       {/* MAIN AREA */}

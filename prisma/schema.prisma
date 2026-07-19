@@ -38,6 +38,11 @@ model User {
   // Fast gate separating internal CEO OS users from external Portal users.
   isInternal   Boolean @default(false)
 
+  // Portal scoping (external users): a build customer is tied to their vehicle;
+  // a sponsor user is tied to their sponsor record. Scalar links, no relation.
+  customerVehicleId String?
+  sponsorId         String?
+
   roles      UserRole[]
   ownedTasks Task[]     @relation("TaskOwner")
   ownedRisks Risk[]     @relation("RiskOwner")

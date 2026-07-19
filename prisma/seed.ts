@@ -577,6 +577,40 @@ async function seedPrograms(ceoId: string) {
   }
 }
 
+async function seedPortal(ceoId: string) {
+  const vehicle = await prisma.vehicle.findFirst({ where: { model: "F-150" } });
+  const project = await prisma.project.findFirst({ where: { name: { contains: "F-150" } } });
+  const sponsor = await prisma.sponsor.findFirst({ where: { name: "Summit Racing" } });
+
+  // Link external portal users to their scoped records.
+  if (vehicle) await prisma.user.update({ where: { email: "customer@example.com" }, data: { customerVehicleId: vehicle.id } }).catch(() => {});
+  if (sponsor) await prisma.user.update({ where: { email: "sponsor@example.com" }, data: { sponsorId: sponsor.id } }).catch(() => {});
+
+  // Change orders on the F-150 build — one awaiting customer decision.
+  if (project && (await prisma.changeOrder.count({ where: { projectId: project.id } })) === 0) {
+    await prisma.changeOrder.createMany({
+      data: [
+        { projectId: project.id, title: "Upgrade to bed wood + stainless strips", description: "Customer-requested premium bed kit.", amountCents: toCents(1400), status: "proposed", createdById: ceoId, updatedById: ceoId },
+        { projectId: project.id, title: "Add color-matched wheel centers", description: "Approved during suspension phase.", amountCents: toCents(600), status: "approved", createdById: ceoId, updatedById: ceoId },
+      ],
+    });
+  }
+
+  // A couple of build photos for the customer portal.
+  if (vehicle && (await prisma.photo.count({ where: { vehicleId: vehicle.id } })) === 0) {
+    await prisma.photo.createMany({
+      data: [
+        { vehicleId: vehicle.id, url: "https://placehold.co/600x400/1c1f24/e8dcc8?text=Teardown", caption: "Teardown complete", createdById: ceoId },
+        { vehicleId: vehicle.id, url: "https://placehold.co/600x400/1c1f24/e8dcc8?text=Suspension", caption: "Coilovers mocked up", createdById: ceoId },
+        { vehicleId: vehicle.id, url: "https://placehold.co/600x400/1c1f24/e8dcc8?text=Stance", caption: "First stance check", createdById: ceoId },
+      ],
+    });
+  }
+
+  // Give the sponsor portal something to review.
+  await prisma.sponsorDeliverable.updateMany({ where: { title: { contains: "Coilover install feature" } }, data: { status: "Submitted" } });
+}
+
 async function main() {
   console.log("Seeding Scarred Steel Co. Platform (Phase 1)…");
   await seedRbac();
@@ -601,6 +635,8 @@ async function main() {
   console.log("  ✓ commerce (merch, affiliate, digital products, blueprint)");
   await seedPrograms(ceo.id);
   console.log("  ✓ programs (fleet assessment, finds, rescues, giveaways)");
+  await seedPortal(ceo.id);
+  console.log("  ✓ portal (external user links, change orders, photos)");
   console.log("Seed complete. Dev password for all accounts: " + DEV_PASSWORD);
 }
 

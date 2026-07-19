@@ -496,6 +496,43 @@ export type DigitalProductType = (typeof DIGITAL_PRODUCT_TYPES)[number];
 export const DIGITAL_PRODUCT_STATUSES = ["Draft", "Published", "Archived"] as const;
 export type DigitalProductStatus = (typeof DIGITAL_PRODUCT_STATUSES)[number];
 
+// ---- Phase 9: Fleet · Finds · Rescues · Giveaways (Sections 20–23) ----------
+
+// Fleet keep-vs-sell recommendation (computed).
+export const FLEET_RECOMMENDATIONS = ["KEEP", "REVIEW ANNUALLY", "SELL CANDIDATE"] as const;
+export type FleetRecommendation = (typeof FLEET_RECOMMENDATIONS)[number];
+
+// Scarred Steel Finds acquisition pipeline.
+export const FIND_STAGES = ["New", "Saved", "Contacted", "Evaluating", "Acquired", "Rejected"] as const;
+export type FindStage = (typeof FIND_STAGES)[number];
+
+export const FIND_VALUE_PATHS = ["Acquisition", "Content", "Referral", "Brokerage", "Marketplace"] as const;
+export type FindValuePath = (typeof FIND_VALUE_PATHS)[number];
+
+// Scarred Steel Rescues pipeline + outcomes.
+export const RESCUE_STAGES = ["Find", "Rescue", "Revive", "Decide", "Complete"] as const;
+export type RescueStage = (typeof RESCUE_STAGES)[number];
+
+export const RESCUE_OUTCOMES = ["Build", "Sell", "Giveaway", "Keep", "Pass Along"] as const;
+export type RescueOutcome = (typeof RESCUE_OUTCOMES)[number];
+
+// Giveaway workflow stage + lifecycle status.
+export const GIVEAWAY_STAGES = [
+  "Concept",
+  "Prize",
+  "Attorney Review",
+  "Rules",
+  "Eligibility",
+  "Funding",
+  "Ready",
+  "Live",
+  "Complete",
+] as const;
+export type GiveawayStage = (typeof GIVEAWAY_STAGES)[number];
+
+export const GIVEAWAY_STATUSES = ["Planning", "Live", "Complete", "Cancelled"] as const;
+export type GiveawayStatus = (typeof GIVEAWAY_STATUSES)[number];
+
 export const NOTIFICATION_TYPES = [
   "task_due",
   "dependency_risk",

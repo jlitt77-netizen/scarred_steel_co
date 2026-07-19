@@ -1003,3 +1003,118 @@ model BlueprintSection {
   @@index([digitalProductId])
   @@index([vehicleId])
 }
+
+// ---------------------------------------------------------------------------
+// PHASE 9 — FLEET · FINDS · RESCUES · GIVEAWAYS (Sections 20–23)
+// ---------------------------------------------------------------------------
+
+// Keep-vs-sell inputs for a fleet/long-term asset. One per vehicle; the
+// KEEP / REVIEW / SELL recommendation is computed, never stored.
+model FleetAssessment {
+  id        String @id @default(cuid())
+  vehicleId String @unique
+
+  // Annual cost side (integer cents).
+  insuranceAnnualCents       Int?
+  storageAnnualCents         Int?
+  opportunityCostAnnualCents Int?
+
+  // Annual value side (integer cents).
+  mediaValueAnnualCents     Int?
+  sponsorValueAnnualCents   Int?
+  affiliateValueAnnualCents Int?
+  merchValueAnnualCents     Int?
+  eventValueAnnualCents     Int?
+  brandValueAnnualCents     Int?
+
+  notes String?
+
+  createdById String?
+  updatedById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Public vehicle submission feeding the acquisition pipeline.
+model VehicleFind {
+  id             String  @id @default(cuid())
+  submitterName  String?
+  submitterEmail String?
+  vehicleDesc    String
+  year           Int?
+  make           String?
+  model          String?
+  location       String?
+  askingPriceCents Int?
+  photoUrl       String?
+  notes          String?
+
+  stage     String  @default("New") // see enums.FIND_STAGES
+  valuePath String? // see enums.FIND_VALUE_PATHS
+  vehicleId String? // set when acquired → Vehicle portfolio
+
+  createdById String?
+  updatedById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([stage])
+}
+
+// Find → Rescue → Revive → Decide. Content + acquisition engine.
+model Rescue {
+  id          String  @id @default(cuid())
+  title       String
+  vehicleDesc String?
+  location    String?
+  stage       String  @default("Find") // see enums.RESCUE_STAGES
+  outcome     String? // see enums.RESCUE_OUTCOMES
+  seriesId    String? // content-series link
+  vehicleId   String? // acquisition link
+  notes       String?
+
+  createdById String?
+  updatedById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([stage])
+}
+
+// Compliance-gated giveaway. LAUNCH BLOCKED until every gate passes.
+model Giveaway {
+  id               String  @id @default(cuid())
+  name             String
+  prizeDescription String?
+  prizeValueCents  Int?
+  vehicleId        String?
+  stage            String  @default("Concept") // see enums.GIVEAWAY_STAGES
+  status           String  @default("Planning") // see enums.GIVEAWAY_STATUSES
+
+  // Hard launch gates — all must be true to launch.
+  attorneyReviewed   Boolean @default(false)
+  rulesApproved      Boolean @default(false)
+  eligibilityDefined Boolean @default(false)
+  taxPlanApproved    Boolean @default(false)
+  funded             Boolean @default(false)
+
+  // Dates — flow through the Master Calendar.
+  launchDate DateTime?
+  endDate    DateTime?
+  drawDate   DateTime?
+
+  // Post-draw.
+  winnerName       String?
+  winnerVerified   Boolean @default(false)
+  prizeTransferred Boolean @default(false)
+  taxDocsSent      Boolean @default(false)
+  notes            String?
+
+  createdById String?
+  updatedById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([stage])
+  @@index([status])
+}

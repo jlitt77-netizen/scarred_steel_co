@@ -513,6 +513,68 @@ async function seedCommerce(ceoId: string) {
   });
 }
 
+async function seedPrograms(ceoId: string) {
+  const vehicle = await prisma.vehicle.findFirst({ where: { model: "F-150" } });
+  const vehicleId = vehicle?.id ?? null;
+
+  // Fleet assessment for the F-150 (KEEP — strong content asset).
+  if (vehicleId && (await prisma.fleetAssessment.count()) === 0) {
+    await prisma.fleetAssessment.create({
+      data: {
+        vehicleId,
+        insuranceAnnualCents: toCents(1200), storageAnnualCents: toCents(600), opportunityCostAnnualCents: toCents(1400),
+        mediaValueAnnualCents: toCents(6000), sponsorValueAnnualCents: toCents(3000), affiliateValueAnnualCents: toCents(700),
+        merchValueAnnualCents: toCents(1500), eventValueAnnualCents: toCents(1200), brandValueAnnualCents: toCents(2000),
+        notes: "Flagship content asset — earns well above carry.",
+        createdById: ceoId, updatedById: ceoId,
+      },
+    });
+  }
+
+  if ((await prisma.vehicleFind.count()) === 0) {
+    await prisma.vehicleFind.createMany({
+      data: [
+        { vehicleDesc: "1972 Chevy C10 longbed", make: "Chevrolet", model: "C10", year: 1972, location: "Waco, TX", askingPriceCents: toCents(6500), submitterName: "Follower DM", stage: "Evaluating", valuePath: "Acquisition", createdById: ceoId, updatedById: ceoId },
+        { vehicleDesc: "1968 Ford F-100", make: "Ford", model: "F-100", year: 1968, location: "Tulsa, OK", askingPriceCents: toCents(9000), stage: "Contacted", valuePath: "Content", createdById: ceoId, updatedById: ceoId },
+        { vehicleDesc: "1985 Toyota pickup", make: "Toyota", model: "Pickup", year: 1985, location: "Austin, TX", askingPriceCents: toCents(4200), stage: "Saved", valuePath: "Referral", createdById: ceoId, updatedById: ceoId },
+        { vehicleDesc: "Rusted-out Datsun 620", make: "Datsun", model: "620", location: "online", stage: "Rejected", createdById: ceoId, updatedById: ceoId },
+        { vehicleDesc: "1979 Ford F-150 (acquired → Patina King)", make: "Ford", model: "F-150", year: 1979, stage: "Acquired", valuePath: "Acquisition", vehicleId, createdById: ceoId, updatedById: ceoId },
+      ],
+    });
+  }
+
+  if ((await prisma.rescue.count()) === 0) {
+    await prisma.rescue.createMany({
+      data: [
+        { title: "Barn-find C10 rescue", vehicleDesc: "1972 Chevy C10", location: "Waco, TX", stage: "Revive", outcome: "Build", createdById: ceoId, updatedById: ceoId },
+        { title: "Field Datsun pull", vehicleDesc: "Datsun 620", location: "rural OK", stage: "Decide", outcome: "Pass Along", createdById: ceoId, updatedById: ceoId },
+        { title: "Grandpa's F-100", vehicleDesc: "1968 Ford F-100", stage: "Find", createdById: ceoId, updatedById: ceoId },
+      ],
+    });
+  }
+
+  if ((await prisma.giveaway.count()) === 0) {
+    await prisma.giveaway.create({
+      data: {
+        name: "F-150 Patina King Giveaway", prizeDescription: "The finished 1979 F-150", prizeValueCents: toCents(45000),
+        vehicleId, stage: "Rules", status: "Planning",
+        attorneyReviewed: true, rulesApproved: true, eligibilityDefined: true, taxPlanApproved: false, funded: false,
+        launchDate: new Date("2026-10-01"), endDate: new Date("2026-12-15"), drawDate: new Date("2026-12-20"),
+        createdById: ceoId, updatedById: ceoId,
+      },
+    });
+    await prisma.giveaway.create({
+      data: {
+        name: "Merch Drop Sticker Giveaway", prizeDescription: "Sticker packs ×50", prizeValueCents: toCents(400),
+        stage: "Live", status: "Live",
+        attorneyReviewed: true, rulesApproved: true, eligibilityDefined: true, taxPlanApproved: true, funded: true,
+        launchDate: new Date("2026-07-10"), endDate: new Date("2026-07-31"), drawDate: new Date("2026-08-02"),
+        createdById: ceoId, updatedById: ceoId,
+      },
+    });
+  }
+}
+
 async function main() {
   console.log("Seeding Scarred Steel Co. Platform (Phase 1)…");
   await seedRbac();
@@ -535,6 +597,8 @@ async function main() {
   console.log("  ✓ sponsors (CRM pipeline + deliverables)");
   await seedCommerce(ceo.id);
   console.log("  ✓ commerce (merch, affiliate, digital products, blueprint)");
+  await seedPrograms(ceo.id);
+  console.log("  ✓ programs (fleet assessment, finds, rescues, giveaways)");
   console.log("Seed complete. Dev password for all accounts: " + DEV_PASSWORD);
 }
 

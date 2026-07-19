@@ -158,6 +158,29 @@ export async function getCalendarItems(
     }
   }
 
+  // Giveaway milestones flow through the Master Calendar (Section 23): launch,
+  // draw, and end dates appear as work occurrences. Skipped when work is
+  // filtered out, or when a vehicle/project filter is set (a giveaway may not
+  // map to the filtered vehicle).
+  if (workWanted && !filters.projectId && !filters.vehicleId) {
+    const inWindow = (d: Date | null | undefined): d is Date => !!d && d >= from && d <= to;
+    const giveaways = await prisma.giveaway.findMany({
+      where: { status: { not: "Cancelled" } },
+      select: { id: true, name: true, launchDate: true, drawDate: true, endDate: true },
+    });
+    for (const g of giveaways) {
+      for (const [field, label] of [["launchDate", "launch"], ["drawDate", "draw"], ["endDate", "ends"]] as const) {
+        const date = g[field];
+        if (!inWindow(date)) continue;
+        items.push({
+          key: `give:${g.id}:${field}`, eventId: g.id, title: `🎁 ${g.name} — ${label}`, type: "giveaway",
+          category: "work", date: date.toISOString().slice(0, 10), amountCents: null,
+          vehicleId: null, vehicleLabel: null, projectId: null, taskId: null, source: "event",
+        });
+      }
+    }
+  }
+
   items.sort((a, b) => a.date.localeCompare(b.date));
   return items;
 }

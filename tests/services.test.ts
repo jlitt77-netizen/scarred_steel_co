@@ -18,11 +18,15 @@ const WRITER = makeCtx([
 ]);
 const READER = makeCtx(["vehicle:read"]);
 
+// DB-backed suite — runs only when a disposable Postgres URL is provided.
+const dbAvailable = !!process.env.TEST_DATABASE_URL;
+const d = describe.skipIf(!dbAvailable);
+
 beforeEach(async () => {
-  await resetDb();
+  if (dbAvailable) await resetDb();
 });
 
-describe("vehicle service", () => {
+d("vehicle service", () => {
   it("creates a vehicle, computes metrics, and writes an audit record", async () => {
     const v = await createVehicle(WRITER, {
       year: 1975, make: "Ford", model: "F-250", trim: "Highboy",
@@ -60,7 +64,7 @@ describe("vehicle service", () => {
   });
 });
 
-describe("scheduling: four-date events", () => {
+d("scheduling: four-date events", () => {
   it("stores the four dates independently and reschedules one without touching others", async () => {
     const v = await createVehicle(WRITER, { year: 1979, make: "Ford", model: "F-150" } as never);
     const p = await createProject(WRITER, { vehicleId: v.id, name: "Build" } as never);
@@ -91,7 +95,7 @@ describe("scheduling: four-date events", () => {
   });
 });
 
-describe("scheduling: dependencies", () => {
+d("scheduling: dependencies", () => {
   async function twoTasks() {
     const v = await createVehicle(WRITER, { year: 1979, make: "Ford", model: "F-150" } as never);
     const p = await createProject(WRITER, { vehicleId: v.id, name: "Build" } as never);

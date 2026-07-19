@@ -1,9 +1,9 @@
 // Scarred Steel Co. Platform — Phase 1 data model (Application Foundation)
 //
 // Design notes:
-//  - SQLite for local/dev. The schema avoids DB-specific features (native enums,
-//    Json columns) so it can be promoted to Postgres in a later phase with minimal
-//    change. Enumerated values are validated in the app layer (src/lib/enums.ts).
+//  - PostgreSQL (Supabase). The schema avoids provider-specific features (native
+//    enums, Json columns) so it stays portable. Enumerated values are validated
+//    in the app layer (src/lib/enums.ts).
 //  - Money is stored as INTEGER CENTS (never floats) for exact financial math.
 //    Fields carrying money use the `Cents` suffix.
 //  - Audit fields (createdAt/updatedAt/createdById/updatedById) live on every
@@ -13,11 +13,16 @@
 
 generator client {
   provider = "prisma-client-js"
+  // native = local dev; rhel-openssl-* = Netlify/AWS Lambda serverless runtime.
+  binaryTargets = ["native", "rhel-openssl-1.0.x", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  // Pooled connection (Supabase pgBouncer, port 6543) for the serverless app.
+  url       = env("DATABASE_URL")
+  // Direct connection (port 5432) for migrations / introspection.
+  directUrl = env("DIRECT_URL")
 }
 
 // ---------------------------------------------------------------------------

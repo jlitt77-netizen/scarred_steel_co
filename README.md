@@ -20,7 +20,8 @@ portal experience is already represented in navigation and the data model.
 | --- | --- | --- |
 | Framework | **Next.js 15** (App Router, RSC, Server Actions) | One codebase for internal + external, SSR, server actions, edge middleware |
 | Language | **TypeScript** (strict) | Typed data models end-to-end |
-| ORM / DB | **Prisma 6** + **SQLite** (dev) | Relational, migrations, Postgres-promotable — the schema avoids DB-specific features |
+| ORM / DB | **Prisma 6** + **PostgreSQL** (Supabase) | Relational, migrations, pooled serverless connection |
+| Hosting | **Netlify** (`@netlify/plugin-nextjs`) | Serverless Next.js; see `docs/DEPLOYMENT.md` |
 | AuthN | Custom cookie session (**jose** HS256 JWT) + **bcryptjs** | Simple, dependency-light, edge-verifiable |
 | AuthZ | Catalog-driven **RBAC** with confidential gating | Single source of truth, defense-in-depth |
 | Validation | **zod** | Runtime validation at every service boundary |

@@ -1,0 +1,13 @@
+# Netlify build configuration for the Scarred Steel Co. Platform (Next.js).
+[build]
+  command = "npm run build"
+  # The Next.js runtime plugin manages the publish directory + serverless output.
+
+[build.environment]
+  # Prisma reads DATABASE_URL/DIRECT_URL from Netlify env vars (set as secrets).
+  NODE_VERSION = "22"
+  # Skip Prisma's postinstall telemetry noise in CI.
+  PRISMA_HIDE_UPDATE_MESSAGE = "true"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

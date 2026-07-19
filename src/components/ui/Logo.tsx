@@ -1,20 +1,18 @@
 /**
- * Scarred Steel logo lockup.
+ * Scarred Steel Co. logo lockup.
  *
- * The official logo assets are supplied by the user (Section 7 — do NOT
- * recreate or generate the mark). Until the files are added, this renders a
- * TEMPORARY type wordmark so layouts are complete. To switch to the real
- * assets with zero layout changes:
- *   1. Drop `logo-full.svg`, `logo-compact.svg`, `logo-mono.svg` in public/brand/
- *   2. Set LOGO_ASSETS_AVAILABLE = true
+ * The official mark is a square, distressed-steel stacked lockup supplied by the
+ * owner (public/brand/logo-full.png). It has a transparent background, so it
+ * sits directly on the dark UI. Do NOT recreate or regenerate the mark.
+ *
+ * Sizing is height-driven: `full` defaults to a compact header height and each
+ * hero placement passes its own `h-*` class. `compact` is the small square badge
+ * used in the collapsed sidebar. A caller-supplied `h-*` class overrides the
+ * default so there's no Tailwind height conflict.
  */
-export const LOGO_ASSETS_AVAILABLE = false;
+export const LOGO_ASSETS_AVAILABLE = true;
 
-const ASSET: Record<string, { src: string; w: number; h: number }> = {
-  full: { src: "/brand/logo-full.svg", w: 168, h: 40 },
-  compact: { src: "/brand/logo-compact.svg", w: 40, h: 40 },
-  mono: { src: "/brand/logo-mono.svg", w: 168, h: 40 },
-};
+const LOGO_SRC = "/brand/logo-full.png";
 
 export function Logo({
   variant = "full",
@@ -23,29 +21,15 @@ export function Logo({
   variant?: "full" | "compact" | "mono";
   className?: string;
 }) {
-  if (LOGO_ASSETS_AVAILABLE) {
-    const a = ASSET[variant];
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img src={a.src} width={a.w} height={a.h} alt="Scarred Steel Co." className={className} />;
-  }
+  const hasHeight = /(?:^|\s)h-/.test(className);
+  const defaultHeight = hasHeight ? "" : variant === "compact" ? "h-9" : "h-10";
 
-  // Temporary wordmark placeholder (awaiting official assets).
-  if (variant === "compact") {
-    return (
-      <span
-        className={`inline-flex h-9 w-9 items-center justify-center rounded border border-bg-panel bg-bg-charcoal text-lg font-display tracking-widest text-rust-400 ${className}`}
-        title="Scarred Steel Co. (logo placeholder)"
-      >
-        SS
-      </span>
-    );
-  }
+  // eslint-disable-next-line @next/next/no-img-element
   return (
-    <span
-      className={`font-display text-xl uppercase leading-none tracking-[0.18em] ${className}`}
-      title="Scarred Steel Co. (logo placeholder)"
-    >
-      Scarred <span className="text-rust-400">Steel</span> Co.
-    </span>
+    <img
+      src={LOGO_SRC}
+      alt="Scarred Steel Co."
+      className={`w-auto object-contain ${defaultHeight} ${className}`.trim()}
+    />
   );
 }

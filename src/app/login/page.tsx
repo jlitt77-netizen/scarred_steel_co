@@ -24,7 +24,7 @@ export default function LoginPage({
       <div className="relative w-full max-w-sm">
         <div className="mb-8 text-center">
           <div className="flex justify-center">
-            <Logo variant="full" className="text-2xl" />
+            <Logo variant="full" className="h-36 sm:h-44" />
           </div>
           <p className="mt-3 text-[11px] uppercase tracking-[0.3em] text-paper-muted">
             Command Center · Sign In

@@ -17,7 +17,7 @@ export default async function PortalHome() {
       <section className="surface-texture relative mb-8 overflow-hidden rounded-lg border border-bg-gunmetal px-6 py-14 sm:px-10 sm:py-20">
         <div className="absolute inset-0 bg-gradient-to-t from-bg-nearblack via-transparent to-transparent" />
         <div className="relative">
-          <Logo variant="full" className="text-3xl sm:text-4xl" />
+          <Logo variant="full" className="h-40 sm:h-52" />
           <h1 className="mt-4 max-w-2xl text-4xl uppercase leading-tight text-paper-warm sm:text-5xl">
             Built, not broken.
           </h1>

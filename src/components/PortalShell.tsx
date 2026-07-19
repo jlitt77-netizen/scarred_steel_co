@@ -28,7 +28,7 @@ export function PortalShell({
       <header className="sticky top-0 z-30 border-b border-bg-gunmetal bg-bg-nearblack/85 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
           <Link href="/portal" className="flex items-center gap-2">
-            <Logo variant="full" />
+            <Logo variant="full" className="h-12" />
           </Link>
 
           <nav className="hidden items-center gap-1 md:flex">

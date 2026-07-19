@@ -327,6 +327,12 @@ model Risk {
   status         String  @default("open") // open | mitigating | accepted | resolved
   responseOption String? // see enums.RiskResponse
 
+  // Impact preview of the chosen response (Section 6) — modeled before approval.
+  scheduleImpactDays Int?
+  costImpactCents    Int?
+  revenueImpactCents Int?
+  cashImpactCents    Int?
+
   projectId String?
   project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
   vehicleId String?

@@ -246,6 +246,75 @@ export const ISSUE_STATUSES = ["open", "in_progress", "resolved"] as const;
 
 export const CHANGE_ORDER_STATUSES = ["proposed", "approved", "declined"] as const;
 
+// ---- Phase 4: Financial Command Center (Section 8) -------------------------
+
+// Cash accounts. "Available operating cash" is DERIVED (bank − protected −
+// restricted reserves), not stored as an account.
+export const ACCOUNT_TYPES = [
+  "Bank Cash",
+  "Protected Household Reserve",
+  "Business Reserve",
+  "Restricted Cash",
+  "Giveaway Reserve",
+  "Acquisition Reserve",
+] as const;
+export type AccountType = (typeof ACCOUNT_TYPES)[number];
+
+// Reserve types excluded from available operating cash.
+export const RESERVE_ACCOUNT_TYPES: AccountType[] = [
+  "Protected Household Reserve",
+  "Business Reserve",
+  "Restricted Cash",
+  "Giveaway Reserve",
+  "Acquisition Reserve",
+];
+
+// P&L / revenue segments.
+export const SEGMENTS = [
+  "Automotive",
+  "Media",
+  "Sponsorship",
+  "Affiliate",
+  "Merchandise",
+  "Digital Products",
+  "Events",
+  "Licensing",
+  "Other",
+] as const;
+export type Segment = (typeof SEGMENTS)[number];
+
+// Accounts receivable types (Section 8).
+export const RECEIVABLE_TYPES = [
+  "Sponsor Invoice",
+  "Customer Build Invoice",
+  "Vehicle Deposit",
+  "Affiliate Receivable",
+  "Platform Revenue",
+  "Merch Receivable",
+  "Social Media Revenue",
+] as const;
+export type ReceivableType = (typeof RECEIVABLE_TYPES)[number];
+
+// Accounts payable categories (Section 8).
+export const PAYABLE_CATEGORIES = [
+  "Partner Shop",
+  "Parts Vendor",
+  "Camera Crew",
+  "Editor",
+  "Legal",
+  "Insurance",
+  "Sales Tax",
+  "Software",
+  "Marketing",
+  "Contractor",
+  "Other",
+] as const;
+export type PayableCategory = (typeof PAYABLE_CATEGORIES)[number];
+
+export const RECEIVABLE_STATUSES = ["open", "received", "written_off"] as const;
+export const PAYABLE_STATUSES = ["open", "scheduled", "paid"] as const;
+export const TRANSACTION_DIRECTIONS = ["income", "expense"] as const;
+
 export const NOTIFICATION_TYPES = [
   "task_due",
   "dependency_risk",

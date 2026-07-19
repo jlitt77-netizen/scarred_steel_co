@@ -254,6 +254,47 @@ async function seedVehicles(ceoId: string) {
   });
 }
 
+async function seedFinance(ceoId: string) {
+  if ((await prisma.account.count()) > 0) return;
+  await prisma.account.createMany({
+    data: [
+      { name: "Operating Bank", type: "Bank Cash", balanceCents: toCents(42000), description: "Primary business checking", sortOrder: 0, createdById: ceoId, updatedById: ceoId },
+      { name: "Protected Household Reserve", type: "Protected Household Reserve", balanceCents: toCents(25000), sortOrder: 1, createdById: ceoId, updatedById: ceoId },
+      { name: "Business Reserve", type: "Business Reserve", balanceCents: toCents(10000), sortOrder: 2, createdById: ceoId, updatedById: ceoId },
+      { name: "Acquisition Reserve", type: "Acquisition Reserve", balanceCents: toCents(8000), sortOrder: 3, createdById: ceoId, updatedById: ceoId },
+      { name: "Giveaway Reserve", type: "Giveaway Reserve", balanceCents: 0, sortOrder: 4, createdById: ceoId, updatedById: ceoId },
+    ],
+  });
+  await prisma.receivable.createMany({
+    data: [
+      { type: "Sponsor Invoice", segment: "Sponsorship", description: "Summit Racing episode sponsorship", amountCents: toCents(3000), status: "open", dueDate: new Date("2026-08-15"), createdById: ceoId, updatedById: ceoId },
+      { type: "Vehicle Deposit", segment: "Automotive", description: "Customer deposit — F-100 build slot", amountCents: toCents(5000), status: "open", dueDate: new Date("2026-07-25"), createdById: ceoId, updatedById: ceoId },
+      { type: "Platform Revenue", segment: "Media", description: "YouTube ad revenue — May", amountCents: toCents(1200), status: "open", dueDate: new Date("2026-06-25"), createdById: ceoId, updatedById: ceoId },
+      { type: "Affiliate Receivable", segment: "Affiliate", description: "Affiliate payout", amountCents: toCents(450), status: "open", dueDate: new Date("2026-08-01"), createdById: ceoId, updatedById: ceoId },
+      { type: "Customer Build Invoice", segment: "Automotive", description: "F-100 progress invoice #1", amountCents: toCents(8000), status: "open", dueDate: new Date("2026-09-30"), createdById: ceoId, updatedById: ceoId },
+    ],
+  });
+  await prisma.payable.createMany({
+    data: [
+      { category: "Partner Shop", segment: "Automotive", vendor: "Partner Shop", description: "F-150 fab + install progress", amountCents: toCents(3000), status: "scheduled", dueDate: new Date("2026-08-05"), scheduledCashDate: new Date("2026-08-05"), createdById: ceoId, updatedById: ceoId },
+      { category: "Parts Vendor", segment: "Automotive", vendor: "Summit Racing", description: "Coilover kit balance", amountCents: toCents(1798), status: "open", dueDate: new Date("2026-08-10"), createdById: ceoId, updatedById: ceoId },
+      { category: "Camera Crew", segment: "Media", vendor: "Freelance DP", description: "Suspension shoot day rate", amountCents: toCents(600), status: "open", dueDate: new Date("2026-07-30"), createdById: ceoId, updatedById: ceoId },
+      { category: "Insurance", segment: "Other", vendor: "Hagerty", description: "Business + vehicle insurance", amountCents: toCents(450), status: "open", dueDate: new Date("2026-08-01"), createdById: ceoId, updatedById: ceoId },
+      { category: "Legal", segment: "Other", vendor: "Sweepstakes counsel", description: "Giveaway official rules review", amountCents: toCents(1500), status: "open", dueDate: new Date("2026-09-15"), createdById: ceoId, updatedById: ceoId },
+    ],
+  });
+  await prisma.transaction.createMany({
+    data: [
+      { date: new Date("2026-02-10"), direction: "expense", amountCents: toCents(8500), segment: "Automotive", category: "Vehicle acquisition", description: "1979 F-150 purchase", createdById: ceoId },
+      { date: new Date("2026-03-15"), direction: "expense", amountCents: toCents(1600), segment: "Automotive", category: "Brakes", description: "Front disc conversion", createdById: ceoId },
+      { date: new Date("2026-05-08"), direction: "expense", amountCents: toCents(600), segment: "Media", category: "Camera", description: "Suspension shoot", createdById: ceoId },
+      { date: new Date("2026-05-20"), direction: "income", amountCents: toCents(2000), segment: "Sponsorship", category: "Sponsor", description: "Product partner activation", createdById: ceoId },
+      { date: new Date("2026-06-15"), direction: "income", amountCents: toCents(300), segment: "Affiliate", category: "Affiliate", description: "June affiliate payout", createdById: ceoId },
+      { date: new Date("2026-06-30"), direction: "income", amountCents: toCents(800), segment: "Media", category: "Platform", description: "YouTube ad revenue", createdById: ceoId },
+    ],
+  });
+}
+
 async function main() {
   console.log("Seeding Scarred Steel Co. Platform (Phase 1)…");
   await seedRbac();
@@ -266,6 +307,8 @@ async function main() {
   if (!ceo) throw new Error("CEO user missing after seed");
   await seedVehicles(ceo.id);
   console.log("  ✓ vehicles, projects, phases, tasks, events, risks");
+  await seedFinance(ceo.id);
+  console.log("  ✓ finance (accounts, A/R, A/P, transactions)");
   console.log("Seed complete. Dev password for all accounts: " + DEV_PASSWORD);
 }
 

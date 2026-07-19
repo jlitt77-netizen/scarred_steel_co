@@ -11,7 +11,7 @@ import {
   StatusBadge,
   CapacityMeter,
 } from "@/components/ui/primitives";
-import { getSetting } from "@/server/services/settings";
+import { getCashSummary } from "@/server/services/finance";
 import { formatCents } from "@/lib/money";
 import { IconChevron } from "@/components/ui/icons";
 
@@ -27,7 +27,7 @@ export default async function OsHome() {
   const canSchedule = can(ctx, "event:read") || can(ctx, "calendar:read");
   const now = new Date();
 
-  const [vehicles, projects, tasks, openRisks, upcomingRevenue, reserveRaw] =
+  const [vehicles, projects, tasks, openRisks, upcomingRevenue, cash] =
     await Promise.all([
       prisma.vehicle.findMany({ orderBy: { updatedAt: "desc" } }),
       prisma.project.findMany({ include: { vehicle: true } }),
@@ -46,7 +46,7 @@ export default async function OsHome() {
             take: 5,
           })
         : Promise.resolve([]),
-      canFinance ? getSetting("finance.protected_reserve_cents") : Promise.resolve(null),
+      canFinance ? getCashSummary(ctx) : Promise.resolve(null),
     ]);
 
   const activeBuilds = projects.filter((p) => p.status === "Active").length;
@@ -54,7 +54,6 @@ export default async function OsHome() {
     (p) => p.budgetCents != null && p.actualCostCents != null && p.actualCostCents > p.budgetCents,
   ).length;
   const buildsAtRisk = new Set(openRisks.map((r) => r.projectId).filter(Boolean)).size;
-  const reserveCents = reserveRaw ? Number(reserveRaw) : null;
 
   return (
     <div>
@@ -65,17 +64,19 @@ export default async function OsHome() {
       />
 
       {/* TOP ROW — cash posture */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-        <MetricCard label="Available Cash" value={<Pending phase={4} />} accent="financial" />
-        {canFinance ? (
-          <FinancialMetric label="Protected Reserve" cents={reserveCents} hint="Household reserve" />
-        ) : (
-          <MetricCard label="Protected Reserve" value={<span className="text-sm text-paper-muted">restricted</span>} />
-        )}
-        <MetricCard label="30-Day Cash Out" value={<Pending phase={4} />} />
-        <MetricCard label="30-Day Revenue In" value={<Pending phase={4} />} />
-        <MetricCard label="Net 30-Day Change" value={<Pending phase={4} />} />
-      </div>
+      {cash ? (
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+          <MetricCard label="Available Cash" value={formatCents(cash.availableOperatingCents)} accent="financial" />
+          <FinancialMetric label="Protected Reserve" cents={cash.protectedReserveCents} hint="Household reserve" />
+          <FinancialMetric label="30-Day Cash Out" cents={cash.committedOutflow30Cents} />
+          <FinancialMetric label="30-Day Revenue In" cents={cash.expectedInflow30Cents} />
+          <FinancialMetric label="Net 30-Day Change" cents={cash.net30Cents} signed />
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+          <MetricCard label="Cash Posture" value={<span className="text-sm text-paper-muted">Finance access required</span>} />
+        </div>
+      )}
 
       {/* SECOND ROW — operational posture */}
       <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-5">
@@ -98,16 +99,24 @@ export default async function OsHome() {
         </Panel>
 
         <Panel accent="financial" title="Cash Flow Forecast">
-          <p className="text-sm text-paper-muted">
-            12-month rolling cash forecast is delivered by the Financial Command
-            Center in Phase 4.
-          </p>
-          {canFinance ? (
-            <Link href="/os/finance" className="btn-ghost mt-3 px-0 text-rust-400">
-              Open Financial Command Center <IconChevron />
-            </Link>
+          {cash ? (
+            <>
+              <div className="text-sm text-paper-steel">Next 30 days</div>
+              <div className="mt-1 flex items-baseline gap-2">
+                <span className={`font-display text-2xl tnum ${cash.net30Cents >= 0 ? "text-status-gain" : "text-status-loss"}`}>
+                  {cash.net30Cents >= 0 ? "+" : ""}{formatCents(cash.net30Cents)}
+                </span>
+                <span className="text-xs text-paper-muted">net</span>
+              </div>
+              <div className="mt-1 text-xs text-paper-muted tnum">
+                in {formatCents(cash.expectedInflow30Cents)} · out {formatCents(cash.committedOutflow30Cents)}
+              </div>
+              <Link href="/os/finance" className="btn-ghost mt-3 px-0 text-rust-400">
+                Open Financial Command Center <IconChevron />
+              </Link>
+            </>
           ) : (
-            <p className="mt-3 text-xs text-paper-muted">Requires finance access.</p>
+            <p className="text-sm text-paper-muted">Requires finance access.</p>
           )}
         </Panel>
 

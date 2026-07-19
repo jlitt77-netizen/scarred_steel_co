@@ -12,7 +12,7 @@
 //    provides the authoritative before/after history ("nothing moves silently").
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   // native = local dev; rhel-openssl-* = Netlify/AWS Lambda serverless runtime.
   binaryTargets = ["native", "rhel-openssl-1.0.x", "rhel-openssl-3.0.x"]
 }
@@ -38,12 +38,12 @@ model User {
   // Fast gate separating internal CEO OS users from external Portal users.
   isInternal   Boolean @default(false)
 
-  roles        UserRole[]
-  ownedTasks   Task[]     @relation("TaskOwner")
-  ownedRisks   Risk[]     @relation("RiskOwner")
+  roles      UserRole[]
+  ownedTasks Task[]     @relation("TaskOwner")
+  ownedRisks Risk[]     @relation("RiskOwner")
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([isInternal])
 }
@@ -59,8 +59,8 @@ model Role {
   users       UserRole[]
   permissions RolePermission[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Permission {
@@ -72,9 +72,9 @@ model Permission {
   // margins, legal notes, risk/scenario). Never grantable to external roles.
   isConfidential Boolean @default(false)
 
-  roles          RolePermission[]
+  roles RolePermission[]
 
-  createdAt      DateTime @default(now())
+  createdAt DateTime @default(now())
 }
 
 model UserRole {
@@ -116,23 +116,25 @@ model Vehicle {
 
   // Money (integer cents). Derived metrics (trueCashInvested, profit, ROI) are
   // computed in code, not stored — see src/lib/vehicle-metrics.ts.
-  acquisitionCostCents      Int?
-  buildBudgetCents          Int?
-  revisedBudgetCents        Int?
-  actualCostCents           Int?
+  acquisitionCostCents       Int?
+  buildBudgetCents           Int?
+  revisedBudgetCents         Int?
+  actualCostCents            Int?
   sponsorProductOffsetsCents Int?
-  sponsorCashCents          Int?
-  currentMarketValueCents   Int?
-  targetSalePriceCents      Int?
-  requiredSalePriceCents    Int?
-  actualSalePriceCents      Int?
+  sponsorCashCents           Int?
+  currentMarketValueCents    Int?
+  targetSalePriceCents       Int?
+  requiredSalePriceCents     Int?
+  actualSalePriceCents       Int?
 
   acquiredAt DateTime?
   soldAt     DateTime?
 
-  projects Project[]
-  events   Event[]
-  risks    Risk[]
+  projects  Project[]
+  events    Event[]
+  risks     Risk[]
+  documents Document[]
+  photos    Photo[]
 
   createdById String?
   updatedById String?
@@ -159,11 +161,17 @@ model Project {
   actualStart  DateTime?
   actualEnd    DateTime?
 
-  phases     BuildPhase[]
-  tasks      Task[]
-  events     Event[]
-  risks      Risk[]
-  changeLogs ChangeLog[]
+  phases       BuildPhase[]
+  tasks        Task[]
+  events       Event[]
+  risks        Risk[]
+  changeLogs   ChangeLog[]
+  costItems    CostItem[]
+  partsOrders  PartsOrder[]
+  documents    Document[]
+  photos       Photo[]
+  issues       Issue[]
+  changeOrders ChangeOrder[]
 
   createdById String?
   updatedById String?
@@ -179,8 +187,8 @@ model BuildPhase {
   projectId String
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   name      String // see enums.BuildPhaseName
-  sequence  Int    @default(0)
-  status    String @default("Not Started") // see enums.PhaseStatus
+  sequence  Int     @default(0)
+  status    String  @default("Not Started") // see enums.PhaseStatus
 
   plannedStart    DateTime?
   plannedEnd      DateTime?
@@ -188,15 +196,18 @@ model BuildPhase {
   actualEnd       DateTime?
   percentComplete Int       @default(0)
 
-  tasks Task[]
+  tasks       Task[]
+  costItems   CostItem[]
+  partsOrders PartsOrder[]
+  photos      Photo[]
 
   createdById String?
   updatedById String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  @@index([projectId])
   @@unique([projectId, sequence])
+  @@index([projectId])
 }
 
 model Task {
@@ -225,11 +236,11 @@ model Task {
   actualHours     Float?
   budgetCents     Int?
   actualCostCents Int?
-  percentComplete Int   @default(0)
+  percentComplete Int    @default(0)
 
-  events            Event[]
-  predecessorLinks  Dependency[] @relation("DependencyPredecessor")
-  successorLinks    Dependency[] @relation("DependencySuccessor")
+  events           Event[]
+  predecessorLinks Dependency[] @relation("DependencyPredecessor")
+  successorLinks   Dependency[] @relation("DependencySuccessor")
 
   createdById String?
   updatedById String?
@@ -307,13 +318,13 @@ model Dependency {
 // ---------------------------------------------------------------------------
 
 model Risk {
-  id          String  @id @default(cuid())
-  category    String // see enums.RiskCategory
-  title       String
-  description String?
-  severity    String  @default("medium") // low | medium | high | critical
-  likelihood  String  @default("medium") // low | medium | high
-  status      String  @default("open") // open | mitigating | accepted | resolved
+  id             String  @id @default(cuid())
+  category       String // see enums.RiskCategory
+  title          String
+  description    String?
+  severity       String  @default("medium") // low | medium | high | critical
+  likelihood     String  @default("medium") // low | medium | high
+  status         String  @default("open") // open | mitigating | accepted | resolved
   responseOption String? // see enums.RiskResponse
 
   projectId String?
@@ -338,7 +349,7 @@ model Risk {
 // Domain-level narrative change record (schedule/budget changes, cascade preview
 // outcomes). Distinct from AuditLog (technical before/after on every entity).
 model ChangeLog {
-  id         String  @id @default(cuid())
+  id         String   @id @default(cuid())
   projectId  String?
   project    Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
   entityType String
@@ -355,7 +366,7 @@ model ChangeLog {
 
 // Authoritative technical audit trail (Section 34).
 model AuditLog {
-  id         String  @id @default(cuid())
+  id         String   @id @default(cuid())
   entityType String
   entityId   String
   action     String // create | update | delete | login | permission_denied | ...
@@ -385,16 +396,156 @@ model AppSetting {
 // Notifications architecture (Section 33). Channels/dispatch land in a later
 // phase; the record + type taxonomy are established here.
 model Notification {
-  id        String  @id @default(cuid())
-  userId    String?
-  type      String // see enums.NotificationType
-  title     String
-  body      String?
+  id         String    @id @default(cuid())
+  userId     String?
+  type       String // see enums.NotificationType
+  title      String
+  body       String?
   entityType String?
   entityId   String?
-  readAt    DateTime?
-  createdAt DateTime @default(now())
+  readAt     DateTime?
+  createdAt  DateTime  @default(now())
 
   @@index([userId])
   @@index([readAt])
+}
+
+// ---------------------------------------------------------------------------
+// BUILD OS (Phase 3) — costs, parts, documents, photos, issues, change orders
+// ---------------------------------------------------------------------------
+
+// Detailed build cost line item (Sections 9 & 11). Money in integer cents.
+// budget → committed → actual, with independent scheduled-cash vs paid dates.
+model CostItem {
+  id        String      @id @default(cuid())
+  projectId String
+  project   Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  phaseId   String?
+  phase     BuildPhase? @relation(fields: [phaseId], references: [id], onDelete: SetNull)
+
+  category    String // see enums.CostCategory
+  description String
+  vendor      String?
+  status      String  @default("planned") // planned | committed | actual | paid
+
+  budgetCents    Int?
+  committedCents Int?
+  actualCents    Int?
+
+  scheduledCashDate DateTime?
+  paidDate          DateTime?
+  notes             String?
+
+  createdById String?
+  updatedById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([category])
+  @@index([status])
+}
+
+model PartsOrder {
+  id        String      @id @default(cuid())
+  projectId String
+  project   Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  phaseId   String?
+  phase     BuildPhase? @relation(fields: [phaseId], references: [id], onDelete: SetNull)
+
+  manufacturer  String?
+  partName      String
+  partNumber    String?
+  quantity      Int     @default(1)
+  unitCostCents Int?
+  status        String  @default("needed") // see enums.PartsStatus
+  vendor        String?
+  affiliateUrl  String?
+
+  orderedAt  DateTime?
+  expectedAt DateTime?
+  receivedAt DateTime?
+  notes      String?
+
+  createdById String?
+  updatedById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([status])
+}
+
+model Document {
+  id        String   @id @default(cuid())
+  vehicleId String?
+  vehicle   Vehicle? @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  name     String
+  category String  @default("Other") // see enums.DocumentCategory
+  url      String?
+  notes    String?
+
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([vehicleId])
+  @@index([projectId])
+}
+
+model Photo {
+  id        String      @id @default(cuid())
+  vehicleId String?
+  vehicle   Vehicle?    @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  projectId String?
+  project   Project?    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  phaseId   String?
+  phase     BuildPhase? @relation(fields: [phaseId], references: [id], onDelete: SetNull)
+
+  url     String
+  caption String?
+
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  @@index([vehicleId])
+  @@index([projectId])
+}
+
+model Issue {
+  id          String  @id @default(cuid())
+  projectId   String
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  severity    String  @default("medium") // low | medium | high
+  status      String  @default("open") // open | in_progress | resolved
+
+  createdById String?
+  updatedById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([status])
+}
+
+model ChangeOrder {
+  id          String  @id @default(cuid())
+  projectId   String
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  amountCents Int?
+  status      String  @default("proposed") // proposed | approved | declined
+
+  createdById String?
+  updatedById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([projectId])
 }

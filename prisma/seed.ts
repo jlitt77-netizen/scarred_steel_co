@@ -178,6 +178,32 @@ async function seedVehicles(ceoId: string) {
     },
   });
 
+  // ---- F-150 build detail (Phase 3): costs, parts, document, issue ----
+  await prisma.costItem.createMany({
+    data: [
+      { projectId: f150Project.id, category: "Vehicle acquisition", description: "1979 F-150 purchase", vendor: "Marketplace seller", status: "paid", budgetCents: toCents(8500), committedCents: toCents(8500), actualCents: toCents(8500), paidDate: new Date("2026-02-10"), createdById: ceoId, updatedById: ceoId },
+      { projectId: f150Project.id, phaseId: phases["Suspension"], category: "Coilovers", description: "Front coilover conversion", vendor: "Summit Racing", status: "committed", budgetCents: toCents(3800), committedCents: toCents(3800), scheduledCashDate: new Date("2026-04-20"), createdById: ceoId, updatedById: ceoId },
+      { projectId: f150Project.id, category: "Wheels", description: "17x8 US Mags set of 4", status: "planned", budgetCents: toCents(2400), createdById: ceoId, updatedById: ceoId },
+      { projectId: f150Project.id, category: "Tires", description: "BFG Radial T/A staggered", status: "planned", budgetCents: toCents(1200), createdById: ceoId, updatedById: ceoId },
+      { projectId: f150Project.id, phaseId: phases["Paint"], category: "Paint", description: "Single-stage cab & bed", status: "planned", budgetCents: toCents(5200), createdById: ceoId, updatedById: ceoId },
+      { projectId: f150Project.id, category: "Partner-shop labor", description: "Fab + install hours", vendor: "Partner Shop", status: "actual", budgetCents: toCents(6000), committedCents: toCents(3000), actualCents: toCents(2400), createdById: ceoId, updatedById: ceoId },
+      { projectId: f150Project.id, category: "Brakes", description: "Front disc conversion", vendor: "Summit Racing", status: "paid", budgetCents: toCents(1600), committedCents: toCents(1600), actualCents: toCents(1600), paidDate: new Date("2026-03-15"), createdById: ceoId, updatedById: ceoId },
+      { projectId: f150Project.id, category: "Engine", description: "Rebuilt 351W long block", status: "planned", budgetCents: toCents(4500), createdById: ceoId, updatedById: ceoId },
+    ],
+  });
+  await prisma.partsOrder.createMany({
+    data: [
+      { projectId: f150Project.id, phaseId: phases["Suspension"], manufacturer: "Belltech", partName: "Drop spindles", partNumber: "2600", quantity: 2, unitCostCents: toCents(210), status: "ordered", vendor: "Summit Racing", orderedAt: new Date("2026-04-18"), expectedAt: new Date("2026-05-09"), createdById: ceoId, updatedById: ceoId },
+      { projectId: f150Project.id, phaseId: phases["Suspension"], manufacturer: "Belltech", partName: "Coilover kit", partNumber: "SP2-0810", quantity: 1, unitCostCents: toCents(899), status: "quoted", vendor: "Summit Racing", createdById: ceoId, updatedById: ceoId },
+    ],
+  });
+  await prisma.document.create({
+    data: { vehicleId: f150.id, projectId: f150Project.id, name: "F-150 Title", category: "Title", notes: "Clean TX title on file", createdById: ceoId },
+  });
+  await prisma.issue.create({
+    data: { projectId: f150Project.id, title: "Driver floor pan rust-through found during teardown", description: "Larger than expected; needs a patch panel before interior.", severity: "high", status: "open", createdById: ceoId, updatedById: ceoId },
+  });
+
   // ---- 1969 Ford F-100 ----
   const f100 = await prisma.vehicle.create({
     data: {

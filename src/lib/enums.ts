@@ -159,6 +159,93 @@ export const RISK_SEVERITIES = ["low", "medium", "high", "critical"] as const;
 export const RISK_LIKELIHOODS = ["low", "medium", "high"] as const;
 export const RISK_STATUSES = ["open", "mitigating", "accepted", "resolved"] as const;
 
+// Detailed build cost categories (Section 9 — Cash Flow Management).
+export const COST_CATEGORIES = [
+  "Vehicle acquisition",
+  "Transportation",
+  "Title",
+  "Tax",
+  "Engine",
+  "Transmission",
+  "Rear end",
+  "Suspension",
+  "Lowering",
+  "Lifting",
+  "Coilovers",
+  "Springs",
+  "Shocks",
+  "Four-link",
+  "Airbags",
+  "Sway bars",
+  "Steering",
+  "Wheels",
+  "Tires",
+  "Brakes",
+  "Exhaust",
+  "Electrical",
+  "Gauges",
+  "Wiring",
+  "Glass",
+  "Weatherstrip",
+  "Trim",
+  "Interior",
+  "Paint",
+  "Body",
+  "Patina sauce",
+  "Detailing",
+  "Partner-shop labor",
+  "Outside fabrication",
+  "Business insurance",
+  "Vehicle insurance",
+  "Workers compensation",
+  "Tools",
+  "Equipment",
+  "Camera",
+  "Editing",
+  "Travel",
+  "Shows",
+  "Marketing",
+  "Software",
+  "Legal",
+  "Accounting",
+  "Merchandise inventory",
+] as const;
+export type CostCategory = (typeof COST_CATEGORIES)[number];
+
+// Budget → committed → actual → paid lifecycle for a cost line item.
+export const COST_STATUSES = ["planned", "committed", "actual", "paid"] as const;
+export type CostStatus = (typeof COST_STATUSES)[number];
+
+export const PARTS_STATUSES = [
+  "needed",
+  "quoted",
+  "ordered",
+  "shipped",
+  "received",
+  "installed",
+  "returned",
+  "cancelled",
+] as const;
+export type PartsStatus = (typeof PARTS_STATUSES)[number];
+
+export const DOCUMENT_CATEGORIES = [
+  "Title",
+  "Registration",
+  "Inspection",
+  "Invoice",
+  "Receipt",
+  "Contract",
+  "Insurance",
+  "Build Sheet",
+  "Other",
+] as const;
+export type DocumentCategory = (typeof DOCUMENT_CATEGORIES)[number];
+
+export const ISSUE_SEVERITIES = ["low", "medium", "high"] as const;
+export const ISSUE_STATUSES = ["open", "in_progress", "resolved"] as const;
+
+export const CHANGE_ORDER_STATUSES = ["proposed", "approved", "declined"] as const;
+
 export const NOTIFICATION_TYPES = [
   "task_due",
   "dependency_risk",

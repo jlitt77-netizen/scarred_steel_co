@@ -14,6 +14,12 @@ import {
   RISK_SEVERITIES,
   RISK_LIKELIHOODS,
   RISK_STATUSES,
+  COST_CATEGORIES,
+  COST_STATUSES,
+  PARTS_STATUSES,
+  DOCUMENT_CATEGORIES,
+  ISSUE_SEVERITIES,
+  ISSUE_STATUSES,
 } from "./enums";
 
 const cents = z.number().int("Money must be whole cents").safe();
@@ -143,6 +149,69 @@ export const riskCreateSchema = z.object({
   dueDate: optionalDate,
 });
 export type RiskCreateInput = z.infer<typeof riskCreateSchema>;
+
+// ---- Phase 3: Build OS ------------------------------------------------------
+export const costItemCreateSchema = z.object({
+  projectId: z.string().min(1),
+  phaseId: z.string().min(1).nullish(),
+  category: z.enum(COST_CATEGORIES),
+  description: z.string().min(1).max(200),
+  vendor: z.string().max(120).nullish(),
+  status: z.enum(COST_STATUSES).default("planned"),
+  budgetCents: optionalCents,
+  committedCents: optionalCents,
+  actualCents: optionalCents,
+  scheduledCashDate: optionalDate,
+  paidDate: optionalDate,
+  notes: z.string().max(1000).nullish(),
+});
+export type CostItemCreateInput = z.infer<typeof costItemCreateSchema>;
+
+export const partsOrderCreateSchema = z.object({
+  projectId: z.string().min(1),
+  phaseId: z.string().min(1).nullish(),
+  manufacturer: z.string().max(120).nullish(),
+  partName: z.string().min(1).max(160),
+  partNumber: z.string().max(80).nullish(),
+  quantity: z.number().int().min(1).default(1),
+  unitCostCents: optionalCents,
+  status: z.enum(PARTS_STATUSES).default("needed"),
+  vendor: z.string().max(120).nullish(),
+  affiliateUrl: z.string().url().max(500).nullish().or(z.literal("")),
+  orderedAt: optionalDate,
+  expectedAt: optionalDate,
+  receivedAt: optionalDate,
+  notes: z.string().max(1000).nullish(),
+});
+export type PartsOrderCreateInput = z.infer<typeof partsOrderCreateSchema>;
+
+export const documentCreateSchema = z.object({
+  vehicleId: z.string().min(1).nullish(),
+  projectId: z.string().min(1).nullish(),
+  name: z.string().min(1).max(160),
+  category: z.enum(DOCUMENT_CATEGORIES).default("Other"),
+  url: z.string().url().max(1000).nullish().or(z.literal("")),
+  notes: z.string().max(1000).nullish(),
+});
+export type DocumentCreateInput = z.infer<typeof documentCreateSchema>;
+
+export const photoCreateSchema = z.object({
+  vehicleId: z.string().min(1).nullish(),
+  projectId: z.string().min(1).nullish(),
+  phaseId: z.string().min(1).nullish(),
+  url: z.string().url().max(1000),
+  caption: z.string().max(200).nullish(),
+});
+export type PhotoCreateInput = z.infer<typeof photoCreateSchema>;
+
+export const issueCreateSchema = z.object({
+  projectId: z.string().min(1),
+  title: z.string().min(1).max(200),
+  description: z.string().max(2000).nullish(),
+  severity: z.enum(ISSUE_SEVERITIES).default("medium"),
+  status: z.enum(ISSUE_STATUSES).default("open"),
+});
+export type IssueCreateInput = z.infer<typeof issueCreateSchema>;
 
 export const settingUpsertSchema = z.object({
   key: z.string().min(1).max(80),

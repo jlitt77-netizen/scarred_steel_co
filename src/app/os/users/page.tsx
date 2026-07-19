@@ -1,7 +1,9 @@
 import { requireAuthWithPermission } from "@/lib/auth";
+import { can } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/ui/primitives";
 import { DataTable, type Column } from "@/components/ui/DataTable";
+import { ResetPasswordButton } from "./UserActions";
 
 type UserRow = Awaited<ReturnType<typeof loadUsers>>[number];
 type RoleRow = Awaited<ReturnType<typeof loadRoles>>[number];
@@ -20,7 +22,8 @@ function loadRoles() {
 }
 
 export default async function UsersPage() {
-  await requireAuthWithPermission("user:read");
+  const ctx = await requireAuthWithPermission("user:read");
+  const canWrite = can(ctx, "user:write");
   const [users, roles] = await Promise.all([loadUsers(), loadRoles()]);
 
   const userCols: Column<UserRow>[] = [
@@ -28,6 +31,7 @@ export default async function UsersPage() {
     { key: "email", header: "Email", render: (u) => <span className="text-paper-steel">{u.email}</span> },
     { key: "scope", header: "Scope", render: (u) => <span className="badge">{u.isInternal ? "Internal" : "External"}</span> },
     { key: "roles", header: "Roles", render: (u) => <span className="text-paper-muted">{u.roles.map((r) => r.role.name).join(", ") || "—"}</span> },
+    { key: "actions", header: "Password", align: "right", render: (u) => <ResetPasswordButton userId={u.id} canWrite={canWrite} /> },
   ];
 
   const roleCols: Column<RoleRow>[] = [

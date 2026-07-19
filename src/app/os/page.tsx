@@ -12,6 +12,7 @@ import {
   CapacityMeter,
 } from "@/components/ui/primitives";
 import { getCashSummary } from "@/server/services/finance";
+import { getDeliverablesDueCount } from "@/server/services/sponsors";
 import { formatCents } from "@/lib/money";
 import { IconChevron } from "@/components/ui/icons";
 
@@ -24,10 +25,11 @@ export default async function OsHome() {
   const ctx = await requireInternal();
   const canFinance = can(ctx, "finance:read");
   const canRisk = can(ctx, "risk:read");
+  const canSponsor = can(ctx, "sponsor:read");
   const canSchedule = can(ctx, "event:read") || can(ctx, "calendar:read");
   const now = new Date();
 
-  const [vehicles, projects, tasks, openRisks, upcomingRevenue, cash] =
+  const [vehicles, projects, tasks, openRisks, upcomingRevenue, cash, sponsorDue] =
     await Promise.all([
       prisma.vehicle.findMany({ orderBy: { updatedAt: "desc" } }),
       prisma.project.findMany({ include: { vehicle: true } }),
@@ -47,6 +49,7 @@ export default async function OsHome() {
           })
         : Promise.resolve([]),
       canFinance ? getCashSummary(ctx) : Promise.resolve(null),
+      canSponsor ? getDeliverablesDueCount(ctx) : Promise.resolve(null),
     ]);
 
   const activeBuilds = projects.filter((p) => p.status === "Active").length;
@@ -83,7 +86,16 @@ export default async function OsHome() {
         <MetricCard label="Active Builds" value={activeBuilds} accent="vehicle" />
         <MetricCard label="Builds at Risk" value={buildsAtRisk} tone={buildsAtRisk ? "risk" : "healthy"} accent="risk" />
         <MetricCard label="Over-Budget Projects" value={overBudget} tone={overBudget ? "attention" : "healthy"} />
-        <MetricCard label="Sponsor Deliverables Due" value={<Pending phase={7} />} />
+        {sponsorDue ? (
+          <MetricCard
+            label="Sponsor Deliverables Due"
+            value={sponsorDue.total}
+            tone={sponsorDue.overdue > 0 ? "risk" : sponsorDue.total > 0 ? "attention" : "healthy"}
+            hint={sponsorDue.overdue > 0 ? `${sponsorDue.overdue} overdue` : "next 14 days"}
+          />
+        ) : (
+          <MetricCard label="Sponsor Deliverables Due" value={<Pending phase={7} />} />
+        )}
         <MetricCard label="Customer Approvals" value={<Pending phase={11} />} />
       </div>
 

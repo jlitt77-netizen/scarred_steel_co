@@ -429,6 +429,47 @@ async function seedMedia(ceoId: string) {
   });
 }
 
+async function seedSponsors(ceoId: string) {
+  if ((await prisma.sponsor.count()) > 0) return;
+
+  const vehicle = await prisma.vehicle.findFirst({ where: { model: "F-150" } });
+  const episode = await prisma.episode.findFirst({ where: { number: 2 } });
+  const vehicleId = vehicle?.id ?? null;
+
+  const summit = await prisma.sponsor.create({
+    data: {
+      name: "Summit Racing", contactName: "Partnerships Team", email: "partners@summitracing.example",
+      stage: "Active", level: "Official Partner", exclusive: false,
+      cashValueCents: toCents(3000), productValueCents: toCents(4500), affiliateCommissionPct: 5,
+      contractStart: new Date("2026-02-01"), contractEnd: new Date("2027-01-31"), renewalDate: new Date("2026-12-01"),
+      active: true, createdById: ceoId, updatedById: ceoId,
+    },
+  });
+  const ridetech = await prisma.sponsor.create({
+    data: {
+      name: "Ridetech Suspension", contactName: "OEM Sales", stage: "Negotiating", level: "Product Partner",
+      exclusive: true, exclusiveCategory: "coilovers",
+      productValueCents: toCents(3800), discountPct: 25,
+      renewalDate: new Date("2026-09-15"), active: true, createdById: ceoId, updatedById: ceoId,
+    },
+  });
+  await prisma.sponsor.create({
+    data: {
+      name: "Hagerty", stage: "Prospect", level: "Supporting Partner",
+      cashValueCents: toCents(2000), active: true, createdById: ceoId, updatedById: ceoId,
+    },
+  });
+
+  await prisma.sponsorDeliverable.createMany({
+    data: [
+      { sponsorId: summit.id, vehicleId, episodeId: episode?.id ?? null, title: "Coilover install feature in Suspension Day", type: "Product Feature", status: "In Progress", dueDate: new Date("2026-06-04"), createdById: ceoId, updatedById: ceoId },
+      { sponsorId: summit.id, vehicleId, title: "Logo lower-third for the F-150 series", type: "Logo Placement", status: "Approved", dueDate: new Date("2026-05-01"), completedDate: new Date("2026-04-28"), createdById: ceoId, updatedById: ceoId },
+      { sponsorId: summit.id, vehicleId, title: "Dedicated affiliate link in 3 posts", type: "Social Post", status: "Planned", dueDate: new Date("2026-08-01"), createdById: ceoId, updatedById: ceoId },
+      { sponsorId: ridetech.id, vehicleId, title: "Suspension teardown mention", type: "Episode Mention", status: "Submitted", dueDate: new Date("2026-07-25"), createdById: ceoId, updatedById: ceoId },
+    ],
+  });
+}
+
 async function main() {
   console.log("Seeding Scarred Steel Co. Platform (Phase 1)…");
   await seedRbac();
@@ -447,6 +488,8 @@ async function main() {
   console.log("  ✓ workforce (partner shop, work orders, team, assignments)");
   await seedMedia(ceo.id);
   console.log("  ✓ media (series, episodes, content revenue, social posts)");
+  await seedSponsors(ceo.id);
+  console.log("  ✓ sponsors (CRM pipeline + deliverables)");
   console.log("Seed complete. Dev password for all accounts: " + DEV_PASSWORD);
 }
 

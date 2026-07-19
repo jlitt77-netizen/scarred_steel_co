@@ -131,6 +131,33 @@ export async function getCalendarItems(
     }
   }
 
+  // Sponsor deliverable due dates feed internal scheduling (Section 17): they
+  // appear as "work" occurrences on the day they're due. Skipped when work is
+  // filtered out, or when a project filter is set (deliverables have no project).
+  const workWanted = !wanted || wanted.has("work");
+  if (workWanted && !filters.projectId) {
+    const vLabels = new Map<string, string>();
+    for (const e of events) if (e.vehicle) vLabels.set(e.vehicle.id, `${e.vehicle.year} ${e.vehicle.model}`);
+    const deliverables = await prisma.sponsorDeliverable.findMany({
+      where: {
+        status: { not: "Published" },
+        dueDate: { gte: from, lte: to },
+        ...(filters.vehicleId ? { vehicleId: filters.vehicleId } : {}),
+      },
+      include: { sponsor: { select: { name: true } } },
+    });
+    for (const d of deliverables) {
+      if (!d.dueDate) continue;
+      items.push({
+        key: `deliv:${d.id}`, eventId: d.id,
+        title: `🤝 ${d.sponsor?.name ? d.sponsor.name + ": " : ""}${d.title}`, type: "sponsor_deliverable",
+        category: "work", date: d.dueDate.toISOString().slice(0, 10), amountCents: null,
+        vehicleId: d.vehicleId, vehicleLabel: d.vehicleId ? vLabels.get(d.vehicleId) ?? null : null,
+        projectId: null, taskId: null, source: "event",
+      });
+    }
+  }
+
   items.sort((a, b) => a.date.localeCompare(b.date));
   return items;
 }

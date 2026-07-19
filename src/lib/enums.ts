@@ -418,6 +418,57 @@ export type SocialPostStatus = (typeof SOCIAL_POST_STATUSES)[number];
 export const CONTENT_REVENUE_SOURCES = ["Ad", "Sponsor", "Affiliate", "Merch"] as const;
 export type ContentRevenueSource = (typeof CONTENT_REVENUE_SOURCES)[number];
 
+// ---- Phase 7: Sponsorship & Partnership CRM (Section 17) -------------------
+
+// Ordered sales pipeline (Lost is terminal, off the main path).
+export const SPONSOR_STAGES = [
+  "Prospect",
+  "Contacted",
+  "Proposal",
+  "Negotiating",
+  "Active",
+  "Renewal",
+  "Lost",
+] as const;
+export type SponsorStage = (typeof SPONSOR_STAGES)[number];
+
+// Partner tiers, low to high commitment.
+export const SPONSOR_LEVELS = [
+  "Product Partner",
+  "Supporting Partner",
+  "Official Partner",
+  "Presenting Partner",
+  "Founding Partner",
+] as const;
+export type SponsorLevel = (typeof SPONSOR_LEVELS)[number];
+
+// How a sponsor pays (a deal can blend several).
+export const SPONSOR_COMP_TYPES = ["Cash", "Product", "Discount", "Affiliate Commission"] as const;
+export type SponsorCompType = (typeof SPONSOR_COMP_TYPES)[number];
+
+export const DELIVERABLE_TYPES = [
+  "Social Post",
+  "Episode Mention",
+  "Dedicated Video",
+  "Logo Placement",
+  "Product Feature",
+  "Event Appearance",
+  "Newsletter Mention",
+  "Other",
+] as const;
+export type DeliverableType = (typeof DELIVERABLE_TYPES)[number];
+
+// Ordered deliverable lifecycle, including a revision loop.
+export const DELIVERABLE_STATUSES = [
+  "Planned",
+  "In Progress",
+  "Submitted",
+  "Needs Revision",
+  "Approved",
+  "Published",
+] as const;
+export type DeliverableStatus = (typeof DELIVERABLE_STATUSES)[number];
+
 export const NOTIFICATION_TYPES = [
   "task_due",
   "dependency_risk",

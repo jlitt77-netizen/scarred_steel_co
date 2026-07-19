@@ -844,3 +844,65 @@ model ContentRevenue {
   @@index([episodeId])
   @@index([source])
 }
+
+// ---------------------------------------------------------------------------
+// PHASE 7 — SPONSORSHIP & PARTNERSHIP CRM (Section 17)
+// ---------------------------------------------------------------------------
+
+model Sponsor {
+  id                String  @id @default(cuid())
+  name              String
+  contactName       String?
+  email             String?
+  website           String?
+  stage             String  @default("Prospect") // see enums.SponsorStage
+  level             String? // see enums.SponsorLevel
+  exclusive         Boolean @default(false)
+  exclusiveCategory String? // e.g. "coilovers", "wheels"
+
+  // Blended deal value (integer cents / whole-number percent).
+  cashValueCents         Int? // annualized cash
+  productValueCents      Int? // annualized product/in-kind
+  discountPct            Int?
+  affiliateCommissionPct Int?
+
+  contractStart DateTime?
+  contractEnd   DateTime?
+  renewalDate   DateTime?
+  active        Boolean   @default(true)
+  notes         String?
+
+  deliverables SponsorDeliverable[]
+
+  createdById String?
+  updatedById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([stage])
+  @@index([active])
+}
+
+model SponsorDeliverable {
+  id        String  @id @default(cuid())
+  sponsorId String
+  sponsor   Sponsor @relation(fields: [sponsorId], references: [id], onDelete: Cascade)
+  episodeId String? // optional link to a content episode
+  vehicleId String?
+
+  title         String
+  type          String    @default("Social Post") // see enums.DeliverableType
+  status        String    @default("Planned") // see enums.DeliverableStatus
+  dueDate       DateTime?
+  completedDate DateTime?
+  notes         String?
+
+  createdById String?
+  updatedById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([sponsorId])
+  @@index([status])
+  @@index([dueDate])
+}

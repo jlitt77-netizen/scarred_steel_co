@@ -8,6 +8,12 @@
   NODE_VERSION = "22"
   # Skip Prisma's postinstall telemetry noise in CI.
   PRISMA_HIDE_UPDATE_MESSAGE = "true"
+  # These are server-only RUNTIME secrets — they are never meant to appear in
+  # build output. Netlify's secret scanner produces false positives on DB
+  # connection strings + session secrets for Next.js server apps and fails the
+  # build; omit these known keys so a legitimate value reference doesn't block
+  # the deploy. (The values still live only in Netlify's encrypted env store.)
+  SECRETS_SCAN_OMIT_KEYS = "DATABASE_URL,DIRECT_URL,SESSION_SECRET"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"

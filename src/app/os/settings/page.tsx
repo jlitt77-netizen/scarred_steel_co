@@ -1,40 +1,25 @@
 import { requireAuthWithPermission } from "@/lib/auth";
 import { listSettings } from "@/server/services/settings";
+import { PageHeader } from "@/components/ui/primitives";
+import { DataTable, type Column } from "@/components/ui/DataTable";
+
+type Row = Awaited<ReturnType<typeof listSettings>>[number];
 
 export default async function SettingsPage() {
   const ctx = await requireAuthWithPermission("settings:read");
   const settings = await listSettings(ctx);
 
-  return (
-    <div className="mx-auto max-w-4xl">
-      <h1 className="mb-1 text-2xl font-bold text-steel-100">Settings</h1>
-      <p className="mb-6 text-steel-400">Application configuration.</p>
+  const columns: Column<Row>[] = [
+    { key: "key", header: "Key", render: (s) => <span className="font-mono text-paper-steel">{s.key}</span> },
+    { key: "value", header: "Value", render: (s) => <span className="text-paper-warm">{s.value}</span> },
+    { key: "cat", header: "Category", render: (s) => <span className="badge">{s.category}</span> },
+    { key: "desc", header: "Description", render: (s) => <span className="text-paper-muted">{s.description}</span> },
+  ];
 
-      <div className="overflow-hidden rounded-lg border border-steel-800">
-        <table className="w-full text-sm">
-          <thead className="bg-steel-900 text-left text-xs uppercase tracking-wide text-steel-500">
-            <tr>
-              <th className="px-4 py-3">Key</th>
-              <th className="px-4 py-3">Value</th>
-              <th className="px-4 py-3">Category</th>
-              <th className="px-4 py-3">Description</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-steel-800">
-            {settings.map((s) => (
-              <tr key={s.id}>
-                <td className="px-4 py-3 font-mono text-steel-200">{s.key}</td>
-                <td className="px-4 py-3 text-steel-100">{s.value}</td>
-                <td className="px-4 py-3"><span className="badge">{s.category}</span></td>
-                <td className="px-4 py-3 text-steel-400">{s.description}</td>
-              </tr>
-            ))}
-            {settings.length === 0 && (
-              <tr><td colSpan={4} className="px-4 py-8 text-center text-steel-500">No settings.</td></tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+  return (
+    <div>
+      <PageHeader eyebrow="System" title="Settings" subtitle="Application configuration." />
+      <DataTable columns={columns} rows={settings} getKey={(s) => s.id} empty="No settings." />
     </div>
   );
 }

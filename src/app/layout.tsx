@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { bebas, inter } from "./fonts";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -13,8 +14,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="en" className={`${bebas.variable} ${inter.variable}`}>
+      <body className="scroll-steel">{children}</body>
     </html>
   );
 }

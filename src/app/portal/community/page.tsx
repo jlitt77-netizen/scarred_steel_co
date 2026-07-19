@@ -8,6 +8,7 @@ export default async function Page() {
     <ModulePlaceholder
       title="Fan / Community"
       phase={11}
+      eyebrow="Planned Experience"
       summary="Follow builds, get episode alerts and progress photos, and see merch drops, blueprint releases, sale notices, Finds and Rescues."
       capabilities={[
         "Follow a build and get episode alerts",

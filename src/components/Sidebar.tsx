@@ -2,57 +2,84 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { ComponentType, SVGProps } from "react";
 import type { NavSection } from "@/lib/navigation";
+import { Logo } from "@/components/ui/Logo";
+import {
+  IconGauge, IconAlert, IconLayers, IconCalendar, IconTruck, IconWrench,
+  IconUser, IconDollar, IconSearch, IconClock,
+} from "@/components/ui/icons";
+
+const ICONS: Record<string, ComponentType<SVGProps<SVGSVGElement>>> = {
+  "/os/ceo": IconGauge, "/os/risk": IconAlert, "/os/forecast": IconLayers,
+  "/os/calendar": IconCalendar, "/os/vehicles": IconTruck, "/os/partner-shop": IconWrench,
+  "/os/workforce": IconUser, "/os/fleet": IconTruck, "/os/finance": IconDollar,
+  "/os/media": IconLayers, "/os/social": IconLayers, "/os/sponsors": IconLayers,
+  "/os/commerce": IconLayers, "/os/digital": IconLayers, "/os/giveaways": IconLayers,
+  "/os/finds": IconSearch, "/os/rescues": IconWrench, "/os/build-lab": IconLayers,
+  "/os/audit": IconClock, "/os/settings": IconGauge, "/os/users": IconUser,
+};
 
 export function Sidebar({
   product,
   sections,
-  userName,
-  roleLabel,
+  collapsed = false,
+  onNavigate,
 }: {
-  product: { title: string; accent: string; home: string };
+  product: { title: string; home: string };
   sections: NavSection[];
-  userName: string;
-  roleLabel: string;
+  collapsed?: boolean;
+  onNavigate?: () => void;
 }) {
   const pathname = usePathname();
 
   return (
-    <aside className="flex h-screen w-64 shrink-0 flex-col border-r border-steel-800 bg-steel-900">
-      <div className="border-b border-steel-800 px-5 py-4">
-        <Link href={product.home} className="block">
-          <div className="text-sm font-black uppercase tracking-widest text-steel-100">
-            Scarred <span className="text-rust-500">Steel</span> Co.
-          </div>
-          <div className="mt-0.5 text-[11px] uppercase tracking-wider text-steel-500">
-            {product.title}
-          </div>
+    <div
+      className={`flex h-full flex-col border-r border-bg-gunmetal bg-bg-coal ${
+        collapsed ? "w-16" : "w-64"
+      }`}
+    >
+      <div className="flex h-14 items-center border-b border-bg-gunmetal px-3">
+        <Link href={product.home} onClick={onNavigate} className="flex items-center gap-2 overflow-hidden">
+          <Logo variant={collapsed ? "compact" : "full"} />
         </Link>
       </div>
+      {!collapsed && (
+        <div className="border-b border-bg-gunmetal px-4 py-1.5 text-[10px] uppercase tracking-[0.2em] text-paper-muted">
+          {product.title}
+        </div>
+      )}
 
-      <nav className="flex-1 overflow-y-auto px-3 py-4">
+      <nav className="scroll-steel flex-1 overflow-y-auto px-2 py-3">
         {sections.map((section) => (
-          <div key={section.title} className="mb-5">
-            <div className="mb-1 px-2 text-[10px] font-semibold uppercase tracking-widest text-steel-600">
-              {section.title}
-            </div>
+          <div key={section.title} className="mb-4">
+            {!collapsed && (
+              <div className="mb-1 px-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-paper-muted/70">
+                {section.title}
+              </div>
+            )}
             <ul className="space-y-0.5">
               {section.items.map((item) => {
                 const active =
                   pathname === item.href || pathname.startsWith(item.href + "/");
+                const Icon = ICONS[item.href] ?? IconLayers;
                 return (
                   <li key={item.href}>
                     <Link
                       href={item.href}
-                      className={`flex items-center justify-between rounded-md px-2 py-1.5 text-sm ${
+                      onClick={onNavigate}
+                      title={collapsed ? item.label : undefined}
+                      aria-current={active ? "page" : undefined}
+                      className={`group flex items-center gap-2.5 rounded px-2 py-1.5 text-sm ${
                         active
-                          ? "bg-rust-500/15 text-rust-400"
-                          : "text-steel-300 hover:bg-steel-800 hover:text-steel-100"
-                      }`}
+                          ? "border-l-2 border-rust bg-rust/10 text-rust-400"
+                          : "border-l-2 border-transparent text-paper-steel hover:bg-bg-charcoal hover:text-paper-warm"
+                      } ${collapsed ? "justify-center" : ""}`}
                     >
-                      <span>{item.label}</span>
-                      {item.placeholder && (
-                        <span className="ml-2 rounded bg-steel-800 px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-steel-500">
+                      <Icon className={`shrink-0 text-base ${active ? "text-rust-400" : "text-paper-muted group-hover:text-paper-steel"}`} />
+                      {!collapsed && <span className="flex-1 truncate">{item.label}</span>}
+                      {!collapsed && item.placeholder && (
+                        <span className="rounded bg-bg-gunmetal px-1 py-0.5 text-[9px] uppercase tracking-wide text-paper-muted">
                           P{item.phase}
                         </span>
                       )}
@@ -64,16 +91,6 @@ export function Sidebar({
           </div>
         ))}
       </nav>
-
-      <div className="border-t border-steel-800 px-4 py-3">
-        <div className="text-sm font-medium text-steel-200">{userName}</div>
-        <div className="text-xs text-steel-500">{roleLabel}</div>
-        <form action="/logout" method="post" className="mt-2">
-          <button type="submit" className="text-xs text-steel-400 hover:text-rust-400">
-            Sign out
-          </button>
-        </form>
-      </div>
-    </aside>
+    </div>
   );
 }

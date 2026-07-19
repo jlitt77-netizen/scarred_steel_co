@@ -8,6 +8,7 @@ export default async function Page() {
     <ModulePlaceholder
       title="My Build"
       phase={11}
+      eyebrow="Planned Experience"
       summary="Follow your build: progress, approved scope, customer timeline, contract amount, approved change orders, payments, balance due, and photos."
       capabilities={[
         "Vehicle, project, and progress updates with photos",

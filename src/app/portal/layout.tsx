@@ -1,7 +1,7 @@
 import { requireAuth } from "@/lib/auth";
 import { can } from "@/lib/rbac";
 import { PORTAL_NAV } from "@/lib/navigation";
-import { Sidebar } from "@/components/Sidebar";
+import { PortalShell } from "@/components/PortalShell";
 
 export default async function PortalLayout({
   children,
@@ -18,14 +18,8 @@ export default async function PortalLayout({
   })).filter((section) => section.items.length > 0);
 
   return (
-    <div className="flex">
-      <Sidebar
-        product={{ title: "Portal", accent: "steel", home: "/portal" }}
-        sections={sections}
-        userName={ctx.name}
-        roleLabel={ctx.roleKeys.join(", ") || "member"}
-      />
-      <main className="h-screen flex-1 overflow-y-auto p-8">{children}</main>
-    </div>
+    <PortalShell sections={sections} userName={ctx.name}>
+      {children}
+    </PortalShell>
   );
 }

@@ -8,6 +8,7 @@ export default async function Page() {
     <ModulePlaceholder
       title="Digital Products"
       phase={11}
+      eyebrow="Planned Experience"
       summary="My Garage of purchased blueprints and guides, the Build Planner, saved builds, Build Kits, and affiliate shopping."
       capabilities={[
         "My Garage: purchased blueprints and guides",

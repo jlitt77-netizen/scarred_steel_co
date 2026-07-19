@@ -8,6 +8,7 @@ export default async function Page() {
     <ModulePlaceholder
       title="Sponsor Portal"
       phase={11}
+      eyebrow="Planned Experience"
       summary="Your partnership, deliverables, scheduled and published content, links, views, clicks, performance, approvals, and renewal dates."
       capabilities={[
         "Partnership, deliverables, and renewal dates",

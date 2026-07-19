@@ -2,71 +2,192 @@ import Link from "next/link";
 import { requireInternal } from "@/lib/auth";
 import { can } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
-import { CEO_OS_COMMAND_CENTER_COUNT } from "@/lib/navigation";
+import {
+  PageHeader,
+  Panel,
+  MetricCard,
+  FinancialMetric,
+  RiskBadge,
+  StatusBadge,
+  CapacityMeter,
+} from "@/components/ui/primitives";
+import { getSetting } from "@/server/services/settings";
+import { formatCents } from "@/lib/money";
+import { IconChevron } from "@/components/ui/icons";
+
+// Legit placeholder marker for metrics owned by a later phase.
+function Pending({ phase }: { phase: number }) {
+  return <span className="text-xs text-paper-muted">— · Phase {phase}</span>;
+}
 
 export default async function OsHome() {
   const ctx = await requireInternal();
+  const canFinance = can(ctx, "finance:read");
+  const canRisk = can(ctx, "risk:read");
+  const canSchedule = can(ctx, "event:read") || can(ctx, "calendar:read");
+  const now = new Date();
 
-  const [vehicles, projects, tasks, openRisks] = await Promise.all([
-    prisma.vehicle.count(),
-    prisma.project.count(),
-    prisma.task.count(),
-    can(ctx, "risk:read")
-      ? prisma.risk.count({ where: { status: { in: ["open", "mitigating"] } } })
-      : Promise.resolve(null),
-  ]);
+  const [vehicles, projects, tasks, openRisks, upcomingRevenue, reserveRaw] =
+    await Promise.all([
+      prisma.vehicle.findMany({ orderBy: { updatedAt: "desc" } }),
+      prisma.project.findMany({ include: { vehicle: true } }),
+      prisma.task.count(),
+      canRisk
+        ? prisma.risk.findMany({
+            where: { status: { in: ["open", "mitigating"] } },
+            orderBy: { severity: "desc" },
+            include: { vehicle: true, project: true },
+          })
+        : Promise.resolve([]),
+      canSchedule
+        ? prisma.event.findMany({
+            where: { revenueDate: { gte: now } },
+            orderBy: { revenueDate: "asc" },
+            take: 5,
+          })
+        : Promise.resolve([]),
+      canFinance ? getSetting("finance.protected_reserve_cents") : Promise.resolve(null),
+    ]);
 
-  const stats: { label: string; value: string | number; href?: string }[] = [
-    { label: "Vehicles", value: vehicles, href: "/os/vehicles" },
-    { label: "Build Projects", value: projects, href: "/os/vehicles" },
-    { label: "Tasks", value: tasks },
-    ...(openRisks !== null
-      ? [{ label: "Open Risks", value: openRisks, href: "/os/risk" }]
-      : []),
-  ];
+  const activeBuilds = projects.filter((p) => p.status === "Active").length;
+  const overBudget = projects.filter(
+    (p) => p.budgetCents != null && p.actualCostCents != null && p.actualCostCents > p.budgetCents,
+  ).length;
+  const buildsAtRisk = new Set(openRisks.map((r) => r.projectId).filter(Boolean)).size;
+  const reserveCents = reserveRaw ? Number(reserveRaw) : null;
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <div className="mb-1 flex items-center gap-3">
-        <h1 className="text-2xl font-bold text-steel-100">CEO OS</h1>
-        <span className="badge">Phase 1 · Foundation</span>
-      </div>
-      <p className="mb-8 text-steel-400">
-        Welcome, {ctx.name}. All {CEO_OS_COMMAND_CENTER_COUNT} command centers are
-        represented in navigation; the Vehicle Portfolio is live in Phase 1.
-      </p>
+    <div>
+      <PageHeader
+        eyebrow="Executive"
+        title="CEO Command Center"
+        subtitle={`Welcome, ${ctx.name}. What needs your attention right now.`}
+      />
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        {stats.map((s) => {
-          const body = (
-            <div className="card">
-              <div className="text-3xl font-bold text-steel-100">{s.value}</div>
-              <div className="mt-1 text-xs uppercase tracking-wide text-steel-500">
-                {s.label}
-              </div>
-            </div>
-          );
-          return s.href ? (
-            <Link key={s.label} href={s.href} className="block hover:opacity-90">
-              {body}
+      {/* TOP ROW — cash posture */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+        <MetricCard label="Available Cash" value={<Pending phase={4} />} accent="financial" />
+        {canFinance ? (
+          <FinancialMetric label="Protected Reserve" cents={reserveCents} hint="Household reserve" />
+        ) : (
+          <MetricCard label="Protected Reserve" value={<span className="text-sm text-paper-muted">restricted</span>} />
+        )}
+        <MetricCard label="30-Day Cash Out" value={<Pending phase={4} />} />
+        <MetricCard label="30-Day Revenue In" value={<Pending phase={4} />} />
+        <MetricCard label="Net 30-Day Change" value={<Pending phase={4} />} />
+      </div>
+
+      {/* SECOND ROW — operational posture */}
+      <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-5">
+        <MetricCard label="Active Builds" value={activeBuilds} accent="vehicle" />
+        <MetricCard label="Builds at Risk" value={buildsAtRisk} tone={buildsAtRisk ? "risk" : "healthy"} accent="risk" />
+        <MetricCard label="Over-Budget Projects" value={overBudget} tone={overBudget ? "attention" : "healthy"} />
+        <MetricCard label="Sponsor Deliverables Due" value={<Pending phase={7} />} />
+        <MetricCard label="Customer Approvals" value={<Pending phase={11} />} />
+      </div>
+
+      {/* MAIN AREA */}
+      <div className="mt-6 grid gap-4 lg:grid-cols-3">
+        <Panel accent="neutral" title="Master Operating Timeline">
+          <p className="text-sm text-paper-muted">
+            The unified work / cash / content / revenue timeline lands in Phase 2.
+          </p>
+          <Link href="/os/calendar" className="btn-ghost mt-3 px-0 text-rust-400">
+            Open Master Calendar <IconChevron />
+          </Link>
+        </Panel>
+
+        <Panel accent="financial" title="Cash Flow Forecast">
+          <p className="text-sm text-paper-muted">
+            12-month rolling cash forecast is delivered by the Financial Command
+            Center in Phase 4.
+          </p>
+          {canFinance ? (
+            <Link href="/os/finance" className="btn-ghost mt-3 px-0 text-rust-400">
+              Open Financial Command Center <IconChevron />
             </Link>
           ) : (
-            <div key={s.label}>{body}</div>
-          );
-        })}
+            <p className="mt-3 text-xs text-paper-muted">Requires finance access.</p>
+          )}
+        </Panel>
+
+        <Panel accent="risk" title="Risk & Decision Queue">
+          {!canRisk ? (
+            <p className="text-sm text-paper-muted">Risk center is restricted.</p>
+          ) : openRisks.length === 0 ? (
+            <p className="text-sm text-paper-muted">No open risks. All clear.</p>
+          ) : (
+            <ul className="space-y-2">
+              {openRisks.slice(0, 5).map((r) => (
+                <li key={r.id} className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="text-sm text-paper-warm">{r.title}</div>
+                    <div className="text-xs text-paper-muted">
+                      {r.category}
+                      {r.vehicle ? ` · ${r.vehicle.year} ${r.vehicle.model}` : ""}
+                    </div>
+                  </div>
+                  <RiskBadge severity={r.severity} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
       </div>
 
-      <div className="mt-8 card">
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-steel-400">
-          Phase 1 status
-        </h2>
-        <p className="text-sm text-steel-300">
-          Application shell, authentication, strict RBAC, the shared relational
-          data model, and audit logging are in place. Scheduling (Phase 2),
-          Finance (Phase 4), and the remaining command centers build on this
-          foundation. Confidential data (finance, risk, forecast) is gated to
-          internal roles and never exposed to the external Portal.
-        </p>
+      {/* LOWER AREA */}
+      <div className="mt-4 grid gap-4 lg:grid-cols-3">
+        <Panel accent="vehicle" title="Build Portfolio" className="lg:col-span-2">
+          <div className="space-y-2">
+            {vehicles.slice(0, 6).map((v) => (
+              <Link
+                key={v.id}
+                href={`/os/vehicles/${v.id}`}
+                className="flex items-center justify-between rounded border border-transparent px-2 py-1.5 hover:border-bg-gunmetal hover:bg-bg-charcoal"
+              >
+                <span className="text-sm text-paper-warm">
+                  {v.year} {v.make} {v.model}
+                  {v.nickname ? ` · "${v.nickname}"` : ""}
+                </span>
+                <StatusBadge status={v.status} />
+              </Link>
+            ))}
+          </div>
+          <div className="mt-3 flex gap-4 text-xs text-paper-muted">
+            <span>{vehicles.length} vehicles</span>
+            <span>{projects.length} projects</span>
+            <span>{tasks} tasks</span>
+          </div>
+        </Panel>
+
+        <div className="space-y-4">
+          <Panel accent="financial" title="Upcoming Revenue">
+            {!canSchedule ? (
+              <p className="text-sm text-paper-muted">Restricted.</p>
+            ) : upcomingRevenue.length === 0 ? (
+              <p className="text-sm text-paper-muted">No scheduled revenue.</p>
+            ) : (
+              <ul className="space-y-1.5">
+                {upcomingRevenue.map((e) => (
+                  <li key={e.id} className="flex items-center justify-between text-sm">
+                    <span className="truncate text-paper-steel">{e.title}</span>
+                    <span className="ml-2 shrink-0 tnum text-status-gain">
+                      {e.amountCents != null ? formatCents(e.amountCents) : ""}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Panel>
+
+          <Panel title="Capacity">
+            <div className="space-y-3">
+              <CapacityMeter label="Team (Phase 5)" percent={0} />
+              <CapacityMeter label="Partner Shop (Phase 5)" percent={0} />
+            </div>
+            <p className="mt-2 text-xs text-paper-muted">Live capacity lands in Phase 5.</p>
+          </Panel>
+        </div>
       </div>
     </div>
   );

@@ -8,6 +8,7 @@ export default async function Page() {
     <ModulePlaceholder
       title="Giveaways"
       phase={11}
+      eyebrow="Planned Experience"
       summary="Public giveaway experience: prize, dates, official rules, eligibility, and entry instructions. Internal compliance stays private."
       capabilities={[
         "Prize and key dates",

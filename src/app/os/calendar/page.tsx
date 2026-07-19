@@ -15,6 +15,7 @@ export default async function Page() {
         "Dependency detection and downstream impact preview",
         "Cascade approval → reforecast → audit → notify"
       ]}
+      showCalendarLegend
     />
   );
 }

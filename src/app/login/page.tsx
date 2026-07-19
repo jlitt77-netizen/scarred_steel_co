@@ -1,8 +1,8 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, use } from "react";
 import { loginAction, type LoginState } from "./actions";
-import { use } from "react";
+import { Logo } from "@/components/ui/Logo";
 
 export default function LoginPage({
   searchParams,
@@ -16,48 +16,34 @@ export default function LoginPage({
   );
 
   return (
-    <main className="flex min-h-screen items-center justify-center px-4">
-      <div className="w-full max-w-sm">
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden px-4">
+      {/* Cinematic textured backdrop */}
+      <div className="surface-texture absolute inset-0" />
+      <div className="absolute inset-0 bg-gradient-to-t from-bg-nearblack via-bg-nearblack/70 to-transparent" />
+
+      <div className="relative w-full max-w-sm">
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-black uppercase tracking-widest text-steel-100">
-            Scarred <span className="text-rust-500">Steel</span> Co.
-          </h1>
-          <p className="mt-1 text-sm text-steel-400">Platform Sign In</p>
+          <div className="flex justify-center">
+            <Logo variant="full" className="text-2xl" />
+          </div>
+          <p className="mt-3 text-[11px] uppercase tracking-[0.3em] text-paper-muted">
+            Command Center · Sign In
+          </p>
         </div>
 
-        <form action={action} className="card space-y-4">
+        <form action={action} className="panel-raised space-y-4 p-6">
           <input type="hidden" name="next" value={next ?? ""} />
           <div>
-            <label className="label" htmlFor="email">
-              Email
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="username"
-              className="input"
-              placeholder="you@example.com"
-              required
-            />
+            <label className="label" htmlFor="email">Email</label>
+            <input id="email" name="email" type="email" autoComplete="username" className="input" placeholder="you@scarredsteel.co" required />
           </div>
           <div>
-            <label className="label" htmlFor="password">
-              Password
-            </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              className="input"
-              placeholder="••••••••"
-              required
-            />
+            <label className="label" htmlFor="password">Password</label>
+            <input id="password" name="password" type="password" autoComplete="current-password" className="input" placeholder="••••••••" required />
           </div>
 
           {state.error && (
-            <p className="rounded-md border border-rust-600 bg-rust-600/10 px-3 py-2 text-sm text-rust-400">
+            <p className="flex items-center gap-2 rounded border border-status-critical/50 bg-status-critical/10 px-3 py-2 text-sm text-status-critical" role="alert">
               {state.error}
             </p>
           )}
@@ -67,7 +53,7 @@ export default function LoginPage({
           </button>
         </form>
 
-        <p className="mt-4 text-center text-xs text-steel-500">
+        <p className="mt-4 text-center text-xs text-paper-muted">
           Internal CEO OS and external Portal share this sign-in.
         </p>
       </div>

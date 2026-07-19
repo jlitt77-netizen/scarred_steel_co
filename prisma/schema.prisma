@@ -637,3 +637,101 @@ model Transaction {
   @@index([segment])
   @@index([direction])
 }
+
+// ---------------------------------------------------------------------------
+// PARTNER SHOP + WORKFORCE (Phase 5) — Sections 12 & 13
+// projectId/vehicleId are scalar references (no FK), per the createdById pattern.
+// ---------------------------------------------------------------------------
+
+model PartnerShop {
+  id                   String  @id @default(cuid())
+  name                 String
+  contact              String?
+  hourlyRateCents      Int?
+  capacityHoursPerWeek Int?
+  active               Boolean @default(true)
+  notes                String?
+
+  workOrders WorkOrder[]
+
+  createdById String?
+  updatedById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model WorkOrder {
+  id            String       @id @default(cuid())
+  partnerShopId String?
+  partnerShop   PartnerShop? @relation(fields: [partnerShopId], references: [id], onDelete: SetNull)
+  projectId     String?
+  vehicleId     String?
+
+  title  String
+  type   String @default("hourly") // hourly | fixed | retainer
+  status String @default("draft") // see enums.WorkOrderStatus
+
+  estimatedHours  Float?
+  actualHours     Float?
+  hourlyRateCents Int? // overrides the shop's default when set
+  fixedPriceCents Int?
+
+  scheduledStart DateTime?
+  scheduledEnd   DateTime?
+  invoicedCents  Int?
+  invoiceDate    DateTime?
+  paidDate       DateTime?
+  notes          String?
+
+  createdById String?
+  updatedById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([partnerShopId])
+  @@index([projectId])
+  @@index([status])
+}
+
+model TeamMember {
+  id             String  @id @default(cuid())
+  name           String
+  relationship   String? // e.g. "Father-in-law"
+  role           String  @default("Other") // see enums.TeamRole
+  engagementType String  @default("contractor") // contractor | partner_shop | employee
+  active         Boolean @default(true)
+
+  // Compensation (confidential — gated on finance:read in the UI).
+  hourlyRateCents      Int?
+  salaryCents          Int? // annual
+  benefitsCents        Int? // annual
+  payrollBurdenPct     Int? // % on top of salary (taxes, WC, etc.)
+  bonusCents           Int?
+  capacityHoursPerWeek Int?
+
+  assignments Assignment[]
+
+  createdById String?
+  updatedById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([engagementType])
+}
+
+model Assignment {
+  id           String     @id @default(cuid())
+  teamMemberId String
+  teamMember   TeamMember @relation(fields: [teamMemberId], references: [id], onDelete: Cascade)
+  projectId    String?
+  role         String?
+  hoursPerWeek Float?
+  startDate    DateTime?
+  endDate      DateTime?
+
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  @@index([teamMemberId])
+  @@index([projectId])
+}

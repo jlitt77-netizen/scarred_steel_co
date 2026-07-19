@@ -295,6 +295,68 @@ async function seedFinance(ceoId: string) {
   });
 }
 
+async function seedWorkforce(ceoId: string) {
+  if ((await prisma.partnerShop.count()) > 0) return;
+
+  const project = await prisma.project.findFirst({ where: { name: { contains: "F-150" } } });
+  const projectId = project?.id ?? null;
+  const vehicleId = project?.vehicleId ?? null;
+
+  const shop = await prisma.partnerShop.create({
+    data: {
+      name: "In-Law Fab & Speed", contact: "Father-in-law",
+      hourlyRateCents: toCents(85), capacityHoursPerWeek: 40, active: true,
+      notes: "Primary partner shop — fab, suspension, and chassis work.",
+      createdById: ceoId, updatedById: ceoId,
+    },
+  });
+
+  await prisma.workOrder.createMany({
+    data: [
+      {
+        partnerShopId: shop.id, projectId, vehicleId, title: "Front suspension fab + install",
+        type: "hourly", status: "in_progress", estimatedHours: 24, actualHours: 10,
+        scheduledStart: new Date("2026-07-14"), scheduledEnd: new Date("2026-07-25"),
+        createdById: ceoId, updatedById: ceoId,
+      },
+      {
+        partnerShopId: shop.id, projectId, vehicleId, title: "Chassis boxing + crossmember",
+        type: "hourly", status: "scheduled", estimatedHours: 16,
+        scheduledStart: new Date("2026-08-04"), scheduledEnd: new Date("2026-08-11"),
+        createdById: ceoId, updatedById: ceoId,
+      },
+      {
+        partnerShopId: shop.id, projectId, vehicleId, title: "Bed & cab paint (fixed bid)",
+        type: "fixed", status: "draft", fixedPriceCents: toCents(5200),
+        createdById: ceoId, updatedById: ceoId,
+      },
+    ],
+  });
+
+  await prisma.teamMember.createMany({
+    data: [
+      { name: "Father-in-law", relationship: "Father-in-law", role: "Fabricator", engagementType: "partner_shop", hourlyRateCents: toCents(85), capacityHoursPerWeek: 40, active: true, createdById: ceoId, updatedById: ceoId },
+      { name: "Brother-in-law", relationship: "Brother-in-law", role: "Shop Technician", engagementType: "contractor", hourlyRateCents: toCents(45), capacityHoursPerWeek: 20, active: true, createdById: ceoId, updatedById: ceoId },
+      { name: "Shop Tech", role: "Shop Technician", engagementType: "contractor", hourlyRateCents: toCents(40), capacityHoursPerWeek: 25, active: true, createdById: ceoId, updatedById: ceoId },
+      { name: "Camera Operator", role: "Camera Operator", engagementType: "contractor", hourlyRateCents: toCents(60), capacityHoursPerWeek: 12, active: true, createdById: ceoId, updatedById: ceoId },
+      { name: "Editor", role: "Editor", engagementType: "contractor", hourlyRateCents: toCents(50), capacityHoursPerWeek: 20, active: true, createdById: ceoId, updatedById: ceoId },
+      { name: "Admin / Bookkeeper", role: "Admin", engagementType: "employee", salaryCents: toCents(42000), benefitsCents: toCents(4000), payrollBurdenPct: 15, capacityHoursPerWeek: 20, active: true, createdById: ceoId, updatedById: ceoId },
+    ],
+  });
+
+  if (projectId) {
+    const fab = await prisma.teamMember.findFirst({ where: { role: "Fabricator" } });
+    const tech = await prisma.teamMember.findFirst({ where: { name: "Brother-in-law" } });
+    const cam = await prisma.teamMember.findFirst({ where: { role: "Camera Operator" } });
+    const rows = [
+      fab && { teamMemberId: fab.id, projectId, role: "Suspension & fab", hoursPerWeek: 24, createdById: ceoId },
+      tech && { teamMemberId: tech.id, projectId, role: "Assembly", hoursPerWeek: 12, createdById: ceoId },
+      cam && { teamMemberId: cam.id, projectId, role: "Build documentation", hoursPerWeek: 6, createdById: ceoId },
+    ].filter(Boolean) as { teamMemberId: string; projectId: string; role: string; hoursPerWeek: number; createdById: string }[];
+    if (rows.length) await prisma.assignment.createMany({ data: rows });
+  }
+}
+
 async function main() {
   console.log("Seeding Scarred Steel Co. Platform (Phase 1)…");
   await seedRbac();
@@ -309,6 +371,8 @@ async function main() {
   console.log("  ✓ vehicles, projects, phases, tasks, events, risks");
   await seedFinance(ceo.id);
   console.log("  ✓ finance (accounts, A/R, A/P, transactions)");
+  await seedWorkforce(ceo.id);
+  console.log("  ✓ workforce (partner shop, work orders, team, assignments)");
   console.log("Seed complete. Dev password for all accounts: " + DEV_PASSWORD);
 }
 

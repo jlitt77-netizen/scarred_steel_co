@@ -315,6 +315,46 @@ export const RECEIVABLE_STATUSES = ["open", "received", "written_off"] as const;
 export const PAYABLE_STATUSES = ["open", "scheduled", "paid"] as const;
 export const TRANSACTION_DIRECTIONS = ["income", "expense"] as const;
 
+// ---- Phase 5: Partner Shop + Workforce (Sections 12 & 13) ------------------
+
+export const WORK_ORDER_TYPES = ["hourly", "fixed", "retainer"] as const;
+export type WorkOrderType = (typeof WORK_ORDER_TYPES)[number];
+
+export const WORK_ORDER_STATUSES = [
+  "draft",
+  "scheduled",
+  "in_progress",
+  "invoiced",
+  "paid",
+  "cancelled",
+] as const;
+export type WorkOrderStatus = (typeof WORK_ORDER_STATUSES)[number];
+
+// How a person is engaged (drives cost treatment).
+export const ENGAGEMENT_TYPES = ["contractor", "partner_shop", "employee"] as const;
+export type EngagementType = (typeof ENGAGEMENT_TYPES)[number];
+
+export const TEAM_ROLES = [
+  "Owner",
+  "Shop Technician",
+  "Fabricator",
+  "Camera Operator",
+  "Editor",
+  "Admin",
+  "Other",
+] as const;
+export type TeamRole = (typeof TEAM_ROLES)[number];
+
+// Operating-model scenarios (Section 13).
+export const COMP_SCENARIOS = [
+  "Stay Partner Shop",
+  "Dedicated Bay",
+  "Joint Venture",
+  "Hire Core Team",
+  "Standalone Facility",
+] as const;
+export type CompScenario = (typeof COMP_SCENARIOS)[number];
+
 export const NOTIFICATION_TYPES = [
   "task_due",
   "dependency_risk",

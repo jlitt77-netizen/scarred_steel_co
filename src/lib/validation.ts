@@ -1,0 +1,152 @@
+import { z } from "zod";
+import {
+  VEHICLE_STATUSES,
+  FLEET_CLASSIFICATIONS,
+  PROJECT_STATUSES,
+  BUILD_PHASE_NAMES,
+  PHASE_STATUSES,
+  TASK_STATUSES,
+  EVENT_TYPES,
+  EVENT_STATUSES,
+  DEPENDENCY_TYPES,
+  RISK_CATEGORIES,
+  RISK_RESPONSES,
+  RISK_SEVERITIES,
+  RISK_LIKELIHOODS,
+  RISK_STATUSES,
+} from "./enums";
+
+const cents = z.number().int("Money must be whole cents").safe();
+const optionalCents = cents.nullish();
+const optionalDate = z.coerce.date().nullish();
+
+export const vehicleCreateSchema = z.object({
+  year: z.number().int().min(1900).max(2100),
+  make: z.string().min(1).max(60),
+  model: z.string().min(1).max(60),
+  trim: z.string().max(60).nullish(),
+  nickname: z.string().max(80).nullish(),
+  vin: z.string().max(32).nullish(),
+  status: z.enum(VEHICLE_STATUSES).default("Potential Purchase"),
+  classification: z.enum(FLEET_CLASSIFICATIONS).nullish(),
+  acquisitionCostCents: optionalCents,
+  buildBudgetCents: optionalCents,
+  revisedBudgetCents: optionalCents,
+  actualCostCents: optionalCents,
+  sponsorProductOffsetsCents: optionalCents,
+  sponsorCashCents: optionalCents,
+  currentMarketValueCents: optionalCents,
+  targetSalePriceCents: optionalCents,
+  requiredSalePriceCents: optionalCents,
+  actualSalePriceCents: optionalCents,
+  acquiredAt: optionalDate,
+  soldAt: optionalDate,
+});
+export const vehicleUpdateSchema = vehicleCreateSchema.partial();
+export type VehicleCreateInput = z.infer<typeof vehicleCreateSchema>;
+
+export const projectCreateSchema = z.object({
+  vehicleId: z.string().min(1),
+  name: z.string().min(1).max(120),
+  description: z.string().max(2000).nullish(),
+  status: z.enum(PROJECT_STATUSES).default("Planned"),
+  budgetCents: optionalCents,
+  actualCostCents: optionalCents,
+  percentComplete: z.number().int().min(0).max(100).default(0),
+  plannedStart: optionalDate,
+  plannedEnd: optionalDate,
+  actualStart: optionalDate,
+  actualEnd: optionalDate,
+});
+export const projectUpdateSchema = projectCreateSchema.partial().omit({ vehicleId: true });
+export type ProjectCreateInput = z.infer<typeof projectCreateSchema>;
+
+export const phaseCreateSchema = z.object({
+  projectId: z.string().min(1),
+  name: z.enum(BUILD_PHASE_NAMES),
+  sequence: z.number().int().min(0).default(0),
+  status: z.enum(PHASE_STATUSES).default("Not Started"),
+  plannedStart: optionalDate,
+  plannedEnd: optionalDate,
+  actualStart: optionalDate,
+  actualEnd: optionalDate,
+  percentComplete: z.number().int().min(0).max(100).default(0),
+});
+export type PhaseCreateInput = z.infer<typeof phaseCreateSchema>;
+
+export const taskCreateSchema = z.object({
+  projectId: z.string().min(1),
+  phaseId: z.string().min(1).nullish(),
+  parentTaskId: z.string().min(1).nullish(),
+  title: z.string().min(1).max(160),
+  description: z.string().max(2000).nullish(),
+  status: z.enum(TASK_STATUSES).default("Not Started"),
+  ownerId: z.string().min(1).nullish(),
+  plannedStart: optionalDate,
+  plannedEnd: optionalDate,
+  actualStart: optionalDate,
+  actualEnd: optionalDate,
+  estimatedHours: z.number().min(0).nullish(),
+  actualHours: z.number().min(0).nullish(),
+  budgetCents: optionalCents,
+  actualCostCents: optionalCents,
+  percentComplete: z.number().int().min(0).max(100).default(0),
+});
+export const taskUpdateSchema = taskCreateSchema.partial().omit({ projectId: true });
+export type TaskCreateInput = z.infer<typeof taskCreateSchema>;
+
+// The four independent dates are each optional and never coupled.
+export const eventCreateSchema = z
+  .object({
+    title: z.string().min(1).max(160),
+    type: z.enum(EVENT_TYPES).default("work"),
+    description: z.string().max(2000).nullish(),
+    status: z.enum(EVENT_STATUSES).default("Scheduled"),
+    vehicleId: z.string().min(1).nullish(),
+    projectId: z.string().min(1).nullish(),
+    taskId: z.string().min(1).nullish(),
+    workDate: optionalDate,
+    cashDate: optionalDate,
+    contentDate: optionalDate,
+    revenueDate: optionalDate,
+    amountCents: optionalCents,
+  })
+  .refine(
+    (e) => e.workDate || e.cashDate || e.contentDate || e.revenueDate,
+    { message: "An event must have at least one of work/cash/content/revenue date." },
+  );
+export type EventCreateInput = z.infer<typeof eventCreateSchema>;
+
+export const dependencyCreateSchema = z
+  .object({
+    predecessorId: z.string().min(1),
+    successorId: z.string().min(1),
+    type: z.enum(DEPENDENCY_TYPES).default("finish_to_start"),
+    lagDays: z.number().int().default(0),
+  })
+  .refine((d) => d.predecessorId !== d.successorId, {
+    message: "A task cannot depend on itself.",
+  });
+export type DependencyCreateInput = z.infer<typeof dependencyCreateSchema>;
+
+export const riskCreateSchema = z.object({
+  category: z.enum(RISK_CATEGORIES),
+  title: z.string().min(1).max(160),
+  description: z.string().max(2000).nullish(),
+  severity: z.enum(RISK_SEVERITIES).default("medium"),
+  likelihood: z.enum(RISK_LIKELIHOODS).default("medium"),
+  status: z.enum(RISK_STATUSES).default("open"),
+  responseOption: z.enum(RISK_RESPONSES).nullish(),
+  projectId: z.string().min(1).nullish(),
+  vehicleId: z.string().min(1).nullish(),
+  ownerId: z.string().min(1).nullish(),
+  dueDate: optionalDate,
+});
+export type RiskCreateInput = z.infer<typeof riskCreateSchema>;
+
+export const settingUpsertSchema = z.object({
+  key: z.string().min(1).max(80),
+  value: z.string().max(4000),
+  category: z.string().max(40).default("general"),
+  description: z.string().max(400).nullish(),
+});

@@ -1,0 +1,395 @@
+// Scarred Steel Co. Platform — Phase 1 data model (Application Foundation)
+//
+// Design notes:
+//  - SQLite for local/dev. The schema avoids DB-specific features (native enums,
+//    Json columns) so it can be promoted to Postgres in a later phase with minimal
+//    change. Enumerated values are validated in the app layer (src/lib/enums.ts).
+//  - Money is stored as INTEGER CENTS (never floats) for exact financial math.
+//    Fields carrying money use the `Cents` suffix.
+//  - Audit fields (createdAt/updatedAt/createdById/updatedById) live on every
+//    major mutable entity. createdById/updatedById reference User.id as scalars
+//    to avoid a combinatorial explosion of back-relations; the AuditLog table
+//    provides the authoritative before/after history ("nothing moves silently").
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// AUTH / RBAC
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String  @id @default(cuid())
+  email        String  @unique
+  name         String
+  passwordHash String
+  isActive     Boolean @default(true)
+  // Fast gate separating internal CEO OS users from external Portal users.
+  isInternal   Boolean @default(false)
+
+  roles        UserRole[]
+  ownedTasks   Task[]     @relation("TaskOwner")
+  ownedRisks   Risk[]     @relation("RiskOwner")
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([isInternal])
+}
+
+model Role {
+  id          String  @id @default(cuid())
+  key         String  @unique // machine key, e.g. "ceo", "build_customer"
+  name        String
+  description String?
+  // Internal roles may hold CEO OS permissions; external roles are Portal-only.
+  isInternal  Boolean @default(false)
+
+  users       UserRole[]
+  permissions RolePermission[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Permission {
+  id             String  @id @default(cuid())
+  key            String  @unique // e.g. "vehicle:read", "finance:read_confidential"
+  description    String?
+  category       String  @default("general")
+  // Confidential permissions gate CEO-OS-only data (bank balances, payroll,
+  // margins, legal notes, risk/scenario). Never grantable to external roles.
+  isConfidential Boolean @default(false)
+
+  roles          RolePermission[]
+
+  createdAt      DateTime @default(now())
+}
+
+model UserRole {
+  id     String @id @default(cuid())
+  userId String
+  roleId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@index([roleId])
+}
+
+model RolePermission {
+  id           String     @id @default(cuid())
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([permissionId])
+}
+
+// ---------------------------------------------------------------------------
+// OPERATIONS CORE — Vehicles, Projects, Phases, Tasks
+// ---------------------------------------------------------------------------
+
+model Vehicle {
+  id             String  @id @default(cuid())
+  year           Int
+  make           String
+  model          String
+  trim           String?
+  nickname       String?
+  vin            String?
+  status         String  @default("Potential Purchase") // see enums.VehicleStatus
+  classification String? // fleet classification; see enums.FleetClassification
+
+  // Money (integer cents). Derived metrics (trueCashInvested, profit, ROI) are
+  // computed in code, not stored — see src/lib/vehicle-metrics.ts.
+  acquisitionCostCents      Int?
+  buildBudgetCents          Int?
+  revisedBudgetCents        Int?
+  actualCostCents           Int?
+  sponsorProductOffsetsCents Int?
+  sponsorCashCents          Int?
+  currentMarketValueCents   Int?
+  targetSalePriceCents      Int?
+  requiredSalePriceCents    Int?
+  actualSalePriceCents      Int?
+
+  acquiredAt DateTime?
+  soldAt     DateTime?
+
+  projects Project[]
+  events   Event[]
+  risks    Risk[]
+
+  createdById String?
+  updatedById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status])
+}
+
+model Project {
+  id          String  @id @default(cuid())
+  vehicleId   String
+  vehicle     Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  status      String  @default("Planned") // see enums.ProjectStatus
+
+  budgetCents     Int?
+  actualCostCents Int?
+  percentComplete Int  @default(0)
+
+  plannedStart DateTime?
+  plannedEnd   DateTime?
+  actualStart  DateTime?
+  actualEnd    DateTime?
+
+  phases     BuildPhase[]
+  tasks      Task[]
+  events     Event[]
+  risks      Risk[]
+  changeLogs ChangeLog[]
+
+  createdById String?
+  updatedById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([vehicleId])
+  @@index([status])
+}
+
+model BuildPhase {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name      String // see enums.BuildPhaseName
+  sequence  Int    @default(0)
+  status    String @default("Not Started") // see enums.PhaseStatus
+
+  plannedStart    DateTime?
+  plannedEnd      DateTime?
+  actualStart     DateTime?
+  actualEnd       DateTime?
+  percentComplete Int       @default(0)
+
+  tasks Task[]
+
+  createdById String?
+  updatedById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([projectId])
+  @@unique([projectId, sequence])
+}
+
+model Task {
+  id           String      @id @default(cuid())
+  projectId    String
+  project      Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  phaseId      String?
+  phase        BuildPhase? @relation(fields: [phaseId], references: [id], onDelete: SetNull)
+  parentTaskId String?
+  parentTask   Task?       @relation("TaskSubtasks", fields: [parentTaskId], references: [id], onDelete: Cascade)
+  subtasks     Task[]      @relation("TaskSubtasks")
+
+  title       String
+  description String?
+  status      String  @default("Not Started") // see enums.TaskStatus
+
+  ownerId String?
+  owner   User?   @relation("TaskOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+
+  plannedStart DateTime?
+  plannedEnd   DateTime?
+  actualStart  DateTime?
+  actualEnd    DateTime?
+
+  estimatedHours  Float?
+  actualHours     Float?
+  budgetCents     Int?
+  actualCostCents Int?
+  percentComplete Int   @default(0)
+
+  events            Event[]
+  predecessorLinks  Dependency[] @relation("DependencyPredecessor")
+  successorLinks    Dependency[] @relation("DependencySuccessor")
+
+  createdById String?
+  updatedById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([phaseId])
+  @@index([parentTaskId])
+  @@index([status])
+}
+
+// ---------------------------------------------------------------------------
+// SCHEDULING CORE — Events (four independent dates) + Dependencies
+// ---------------------------------------------------------------------------
+
+model Event {
+  id          String  @id @default(cuid())
+  title       String
+  type        String  @default("work") // see enums.EventType
+  description String?
+  status      String  @default("Scheduled") // see enums.EventStatus
+
+  // Optional anchors — an event may relate to a vehicle, a project, and/or a task.
+  vehicleId String?
+  vehicle   Vehicle? @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  taskId    String?
+  task      Task?    @relation(fields: [taskId], references: [id], onDelete: SetNull)
+
+  // THE FOUR INDEPENDENT DATES. Each is nullable and moves independently.
+  workDate    DateTime? // when the activity physically occurs
+  cashDate    DateTime? // when money leaves the business
+  contentDate DateTime? // when related content is filmed / published
+  revenueDate DateTime? // when expected revenue is received
+
+  // Money attached to cash/revenue timing (integer cents).
+  amountCents Int?
+
+  createdById String?
+  updatedById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([vehicleId])
+  @@index([projectId])
+  @@index([taskId])
+  @@index([type])
+  @@index([workDate])
+  @@index([cashDate])
+  @@index([contentDate])
+  @@index([revenueDate])
+}
+
+model Dependency {
+  id            String @id @default(cuid())
+  predecessorId String
+  successorId   String
+  predecessor   Task   @relation("DependencyPredecessor", fields: [predecessorId], references: [id], onDelete: Cascade)
+  successor     Task   @relation("DependencySuccessor", fields: [successorId], references: [id], onDelete: Cascade)
+
+  type    String @default("finish_to_start") // see enums.DependencyType
+  lagDays Int    @default(0)
+
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  @@unique([predecessorId, successorId])
+  @@index([successorId])
+}
+
+// ---------------------------------------------------------------------------
+// RISK / CHANGE / AUDIT / SETTINGS / NOTIFICATIONS
+// ---------------------------------------------------------------------------
+
+model Risk {
+  id          String  @id @default(cuid())
+  category    String // see enums.RiskCategory
+  title       String
+  description String?
+  severity    String  @default("medium") // low | medium | high | critical
+  likelihood  String  @default("medium") // low | medium | high
+  status      String  @default("open") // open | mitigating | accepted | resolved
+  responseOption String? // see enums.RiskResponse
+
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  vehicleId String?
+  vehicle   Vehicle? @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+
+  ownerId String?
+  owner   User?   @relation("RiskOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+
+  dueDate DateTime?
+
+  createdById String?
+  updatedById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status])
+  @@index([category])
+}
+
+// Domain-level narrative change record (schedule/budget changes, cascade preview
+// outcomes). Distinct from AuditLog (technical before/after on every entity).
+model ChangeLog {
+  id         String  @id @default(cuid())
+  projectId  String?
+  project    Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  entityType String
+  entityId   String
+  action     String // create | update | reschedule | cascade | delete
+  summary    String
+  detailJson String? // JSON payload describing schedule/cost/cash/revenue impact
+  userId     String?
+  createdAt  DateTime @default(now())
+
+  @@index([projectId])
+  @@index([entityType, entityId])
+}
+
+// Authoritative technical audit trail (Section 34).
+model AuditLog {
+  id         String  @id @default(cuid())
+  entityType String
+  entityId   String
+  action     String // create | update | delete | login | permission_denied | ...
+  field      String?
+  beforeJson String?
+  afterJson  String?
+  userId     String?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model AppSetting {
+  id          String  @id @default(cuid())
+  key         String  @unique
+  value       String // scalar or JSON-encoded
+  category    String  @default("general")
+  description String?
+
+  updatedById String?
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+}
+
+// Notifications architecture (Section 33). Channels/dispatch land in a later
+// phase; the record + type taxonomy are established here.
+model Notification {
+  id        String  @id @default(cuid())
+  userId    String?
+  type      String // see enums.NotificationType
+  title     String
+  body      String?
+  entityType String?
+  entityId   String?
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([readAt])
+}

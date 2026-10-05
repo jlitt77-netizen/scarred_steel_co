@@ -20,17 +20,27 @@ export async function loginAction(
     return { error: "Email and password are required." };
   }
 
-  const result = await authenticate(email, password);
-  if (!result) {
-    return { error: "Invalid email or password." };
+  // redirect() works by throwing, so it must stay outside the try/catch.
+  let isInternal: boolean;
+  try {
+    const result = await authenticate(email, password);
+    if (!result) {
+      return { error: "Invalid email or password." };
+    }
+
+    await createSession({
+      userId: result.userId,
+      email: result.email,
+      isInternal: result.isInternal,
+    });
+    isInternal = result.isInternal;
+  } catch (err) {
+    // Infrastructure failure (database unreachable, bad credentials, missing
+    // SESSION_SECRET). Log the real cause server-side; show a safe message.
+    console.error("Login failed due to a server error:", err);
+    return { error: "Sign-in is temporarily unavailable. Please try again shortly." };
   }
 
-  await createSession({
-    userId: result.userId,
-    email: result.email,
-    isInternal: result.isInternal,
-  });
-
-  const dest = next && next.startsWith("/") ? next : result.isInternal ? "/os" : "/portal";
+  const dest = next && next.startsWith("/") ? next : isInternal ? "/os" : "/portal";
   redirect(dest);
 }
